@@ -1,0 +1,13 @@
+module Parsers
+  class DefaultParser < Drasil::Parser
+    def parse
+      data = @response[:data]
+      metadata = {
+        total_pages: @response[:total_pages],
+        page: @response[:page]
+      }
+
+      [data, metadata]
+    end
+  end
+end

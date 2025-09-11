@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# Specify your gem's dependencies in zoop_api_client.gemspec
+gemspec
+
+gem "rake", "~> 13.0"
+
+gem "drasil", git: "git@github.com:rsv-ink/drasil.git"
+
+group :test do
+  gem "webmock"
+end

@@ -1,0 +1,6 @@
+class Example < Drasil::Base
+  has_one :resource, "/resources/:id"
+  has_many :resources, "/resources"
+
+  attributes :id, :name, :email, :created_at, :updated_at
+end

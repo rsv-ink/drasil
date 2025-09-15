@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 namespace :drasil do
   desc "Install drasil"
   task :install do

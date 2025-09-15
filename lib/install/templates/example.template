@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module {{GEM_MODULE}}
   class Example < Drasil::Base
     has_one :resource, "/resources/:id"

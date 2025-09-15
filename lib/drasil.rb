@@ -12,6 +12,7 @@ require "drasil/json_parser"
 require "drasil/url_matcher"
 require "drasil/url_pattern"
 require "drasil/parser"
+require "drasil/railtie" if defined?(Rails)
 
 module Drasil
   class Error < StandardError; end

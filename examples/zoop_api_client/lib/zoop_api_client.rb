@@ -18,5 +18,21 @@ Drasil.configure do |config|
     "Authorization": "your_secret_key_here"
   }
 
+  # SSL config (optional)
+  # config.ssl_options = {
+  #   verify: true,
+  #   ca_file: "/path/to/ca-bundle.crt",
+  #   client_cert: "/path/to/client.crt",
+  #   client_key: "/path/to/client.key",
+  #   version: :TLSv1_2
+  # }
+
+  # Proxy config (optional)
+  # config.proxy_options = {
+  #   uri: "http://proxy.example.com:8080",
+  #   user: "proxy_username",
+  #   password: "proxy_password"
+  # }
+
   config.add_parser "/sellers/:id", ZoopApiClient::Parsers::DefaultParser
 end

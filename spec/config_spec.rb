@@ -77,4 +77,82 @@ RSpec.describe Drasil::Config do
       end
     end
   end
+
+  describe "SSL and Proxy Configuration" do
+    before(:each) do
+      Drasil::Config.ssl_options = nil
+      Drasil::Config.proxy_options = nil
+    end
+
+    context 'when SSL options are configured' do
+      it 'accepts SSL configuration' do
+        ssl_options = {
+          verify: true,
+          ca_file: "/path/to/ca-bundle.crt",
+          client_cert: "/path/to/client.crt",
+          client_key: "/path/to/client.key",
+          version: :TLSv1_2
+        }
+
+        Drasil.configure do |config|
+          config.base_url = "https://api.example.com"
+          config.headers = { "Authorization" => "Bearer test" }
+          config.ssl_options = ssl_options
+          config.add_parser "/test", TestParser
+        end
+
+        expect(Drasil::Config.ssl_options).to eq(ssl_options)
+      end
+    end
+
+    context 'when proxy options are configured' do
+      it 'accepts proxy configuration' do
+        proxy_options = {
+          uri: "http://proxy.example.com:8080",
+          user: "proxy_user",
+          password: "proxy_pass"
+        }
+
+        Drasil.configure do |config|
+          config.base_url = "https://api.example.com"
+          config.headers = { "Authorization" => "Bearer test" }
+          config.proxy_options = proxy_options
+          config.add_parser "/test", TestParser
+        end
+
+        expect(Drasil::Config.proxy_options).to eq(proxy_options)
+      end
+    end
+
+    context 'when both SSL and proxy options are configured' do
+      it 'accepts both configurations' do
+        ssl_options = { verify: true }
+        proxy_options = { uri: "http://proxy.example.com:8080" }
+
+        Drasil.configure do |config|
+          config.base_url = "https://api.example.com"
+          config.headers = { "Authorization" => "Bearer test" }
+          config.ssl_options = ssl_options
+          config.proxy_options = proxy_options
+          config.add_parser "/test", TestParser
+        end
+
+        expect(Drasil::Config.ssl_options).to eq(ssl_options)
+        expect(Drasil::Config.proxy_options).to eq(proxy_options)
+      end
+    end
+
+    context 'when no SSL or proxy options are configured' do
+      it 'works without SSL and proxy configurations' do
+        Drasil.configure do |config|
+          config.base_url = "https://api.example.com"
+          config.headers = { "Authorization" => "Bearer test" }
+          config.add_parser "/test", TestParser
+        end
+
+        expect(Drasil::Config.ssl_options).to be_nil
+        expect(Drasil::Config.proxy_options).to be_nil
+      end
+    end
+  end
 end

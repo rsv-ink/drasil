@@ -1,7 +1,15 @@
 module Drasil
   class Config
     class << self
-      attr_accessor :base_url, :headers, :include_root_in_json, :page_query_name, :per_page_query_name
+      attr_accessor *%i[
+        base_url
+        headers
+        include_root_in_json
+        page_query_name
+        per_page_query_name
+        ssl_options
+        proxy_options
+      ]
       attr_reader :parsers
 
       def add_parser(path, parser)

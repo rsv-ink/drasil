@@ -23,7 +23,13 @@ module Drasil
 
       raise Error.new("No parsers have been registered.") if Config.parsers.blank?
 
-      Spyke::Base.connection = Faraday.new(url: Config.base_url) do |conn|
+      connection_options = {
+        url: Config.base_url
+      }
+      connection_options[:ssl] = Config.ssl_options if Config.ssl_options
+      connection_options[:proxy] = Config.proxy_options if Config.proxy_options
+
+      Spyke::Base.connection = Faraday.new(connection_options) do |conn|
         conn.headers = Config.headers
 
         conn.request   :multipart

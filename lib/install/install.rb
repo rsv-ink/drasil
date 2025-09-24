@@ -10,35 +10,27 @@ puts "Add parsers folder"
 FileUtils.mkdir_p("lib/#{gem_namespace}/parsers")
 
 puts "Add base parser"
-source_file_path = File.join(templates_folder, "default_parser.rb")
+source_file_path = File.join(templates_folder, "templates", "default_parser.template")
 destination_file_path = "lib/#{gem_namespace}/parsers/default_parser.rb"
-FileUtils.copy(source_file_path, destination_file_path)
 
-# Read the contents of the destination file
-contents = File.read(destination_file_path)
+# Read template and replace placeholder
+template_contents = File.read(source_file_path)
+final_contents = template_contents.gsub("{{GEM_MODULE}}", module_name)
 
-# Insert the module statement before "class DefaultParser"
-module_declaration = "module #{module_name}\n"
-contents.gsub!("class DefaultParser", module_declaration + "  class DefaultParser")
-
-# Write the modified contents back to the file
-File.open(destination_file_path, "w") { |file| file.write(contents) }
+# Write the final contents to destination
+File.open(destination_file_path, "w") { |file| file.write(final_contents) }
 
 puts "Add resources folder"
 FileUtils.mkdir_p("lib/#{gem_namespace}/resources")
-source_file_path = File.join(templates_folder, "example.rb")
+source_file_path = File.join(templates_folder, "templates", "example.template")
 destination_file_path = "lib/#{gem_namespace}/resources/example.rb"
-FileUtils.copy(source_file_path, destination_file_path)
 
-# Read the contents of the destination file
-contents = File.read(destination_file_path)
+# Read template and replace placeholder
+template_contents = File.read(source_file_path)
+final_contents = template_contents.gsub("{{GEM_MODULE}}", module_name)
 
-# Insert the module statement before "class Example"
-module_declaration = "module #{module_name}\n"
-contents.gsub!("class Example", module_declaration + "  class Example")
-
-# Write the modified contents back to the file
-File.open(destination_file_path, "w") { |file| file.write(contents) }
+# Write the final contents to destination
+File.open(destination_file_path, "w") { |file| file.write(final_contents) }
 
 puts "Add #{gem_namespace}.rb"
 FileUtils.copy(File.join(templates_folder, "gem_name.rb"), "lib/#{gem_namespace}.rb")

@@ -33,6 +33,14 @@ module Drasil
   class UnprocessableEntityError < Faraday::UnprocessableEntityError
   end
 
+  # Raised by Faraday::Response::RaiseError in case of a 4xx response not explicitly handled.
+  class ClientError < Faraday::ClientError
+  end
+
+  # Raised by Faraday::Response::RaiseError in case of a 5xx response.
+  class ServerError < Faraday::ServerError
+  end
+
   # A unified client error for timeouts.
   class TimeoutError < Faraday::TimeoutError
   end

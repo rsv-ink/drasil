@@ -46,6 +46,26 @@ RSpec.describe 'Drasil Error Classes' do
       end
     end
 
+    describe Drasil::ProxyAuthError do
+      it 'is defined' do
+        expect(defined?(Drasil::ProxyAuthError)).to eq('constant')
+      end
+
+      it 'inherits from Faraday::ProxyAuthError' do
+        expect(Drasil::ProxyAuthError.superclass).to eq(Faraday::ProxyAuthError)
+      end
+    end
+
+    describe Drasil::RequestTimeoutError do
+      it 'is defined' do
+        expect(defined?(Drasil::RequestTimeoutError)).to eq('constant')
+      end
+
+      it 'inherits from Faraday::RequestTimeoutError' do
+        expect(Drasil::RequestTimeoutError.superclass).to eq(Faraday::RequestTimeoutError)
+      end
+    end
+
     describe Drasil::ConflictError do
       it 'is defined' do
         expect(defined?(Drasil::ConflictError)).to eq('constant')

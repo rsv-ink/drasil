@@ -1,471 +1,560 @@
 # Drasil
 
-## Sumário
+[![Gem Version](https://badge.fury.io/rb/drasil.svg)](https://badge.fury.io/rb/drasil)
+[![Tests](https://github.com/rsv-ink/drasil/workflows/Tests/badge.svg)](https://github.com/rsv-ink/drasil/actions)
 
-- [Introdução](#introdução)
-- [Problemas conhecidos](#problemas-conhecidos)
+**Drasil** é uma gem Ruby que fornece uma base para construir clientes de API com uma interface limpa e similar ao ActiveRecord. Construído sobre [Spyke](https://github.com/balvig/spyke) e [Faraday](https://github.com/lostisland/faraday), oferece uma arquitetura flexível baseada em clientes que suporta múltiplas conexões de API, versões e configurações simultaneamente.
+
+## ✨ Funcionalidades
+
+- 🎯 **Arquitetura Baseada em Clientes** - Crie múltiplos clientes de API isolados
+- 🔄 **Suporte Multi-Versão** - Use diferentes versões de API simultaneamente
+- 🔌 **Pronto para Multi-Tenancy** - Credenciais diferentes por tenant
+- 🧵 **Thread-Safe** - Instâncias de cliente isoladas
+- 📦 **Interface Similar ao ActiveRecord** - Operações CRUD familiares
+- 🔍 **Parsers Customizados** - Parsing de resposta flexível
+- 🚀 **Suporte a Paginação** - Helpers de paginação integrados
+- 🔐 **Suporte SSL/TLS** - Suporte completo a SSL e mTLS
+- 🌐 **Suporte a Proxy** - Configuração de proxy HTTP
+
+## 📋 Sumário
+
 - [Instalação](#instalação)
-- [Estrutura de pastas dos Clients](#estrutura-de-pastas-dos-clients)
-- [Usos](#usos)
+- [Início Rápido](#início-rápido)
+- [Uso Baseado em Cliente (v2.0+)](#uso-baseado-em-cliente-v20)
+  - [Criando Clientes](#criando-clientes)
+  - [Múltiplos Clientes](#múltiplos-clientes)
+  - [Múltiplas Versões de API](#múltiplas-versões-de-api)
+- [Uso Legado (v1.x - Descontinuado)](#uso-legado-v1x---descontinuado)
+- [Tópicos Avançados](#tópicos-avançados)
   - [Paginação](#paginação)
-  - [Erros](#erros)
-  - [Criação de parsers](#criação-de-parsers)
-  - [Criação de resources](#criação-de-resources)
+  - [Tratamento de Erros](#tratamento-de-erros)
+  - [Criação de Parsers](#criação-de-parsers)
+  - [Criação de Resources](#criação-de-resources)
+  - [Configuração SSL/mTLS](#configuração-sslmtls)
+  - [Configuração de Proxy](#configuração-de-proxy)
 - [Testes](#testes)
+- [Guia de Migração](#guia-de-migração)
 - [Referências](#referências)
-
-## Introdução
-
-Este documento serve de referência para a instalação da gem `drasil`. Além disso, ele inclui o passo a passo para a criação, configuração e testes de novos API Client's.
-
-Esta gem foi construída utilizando a biblioteca [Spyke](https://github.com/balvig/spyke) e usa o [Faraday](https://github.com/infobyte/faraday) como cliente HTTP. Ela inclui a base para a criação de novos API Client's. Por utilizar a gem `spyke`, ela fornece uma interface similar ao ActiveRecord.
-
-Exemplos de uso:
-
-```ruby
-# Criar um novo seller utilizando o método create
-ZoopApiClient::Seller.create(
-  first_name: "John"
-)
-
-# Criar um novo seller utilizando o método save
-seller = ZoopApiClient::Seller.new(
-  first_name: "John"
-)
-seller.save
-
-# Buscar um seller pelo id
-seller = ZoopApiClient::Seller.find("123456789")
-
-# Atualizar o atributo `first_name`
-seller.update(first_name: "John")
-
-# Deletar o seller
-seller.destroy
-```
-
-## Problemas conhecidos
-
-### Retornos polimórficos dos métodos de comunicação da Zoop
-
-```ruby
-   # app/service_layers/zoop/base_object/seller/api/endpoints.rb:25
-
-  def create_bank_account(bank_account_params, zoop_seller_id)
-    @bank_account = Zoop::BaseObject::Seller::Api::Bank::BankAccounts.new(@client)
-    token = @bank_account.generate_token(data: bank_account_params)["id"]
-    response = @bank_account.associate_to_seller(seller_id: zoop_seller_id, token: token)
-
-    begin
-      JSON.parse(response)
-    rescue StandardError => e
-      puts "error => #{e}"
-    end
-  end
-```
-
-### Falta de padronização nos métodos de criação e atualização de resources
-
-```ruby
-# Creates a card token
-def create_new_card_token(data:)
-  path = "cards/tokens"
-  response = @client.post(path: path, data: data)
-end
-
-# Creates a buyer
-def create_buyer(data:)
-  path = "buyers"
-  response = @client.post(path: path, data: data)
-  JSON.parse(response) if response.present?
-end
-```
-
-### Falta de padronização na paginação de resources
-
-Não há uma interface bem definida para acessar rotas paginadas:
-
-```ruby
-# Page and limit are present in params
-Api::Zoop::Client.account_balance.find_historic_account_balance_by_seller(
-  seller_id: @zoop_id,
-  params: params,
-  positive: positive,
-  negative: negative
-)
-
-# But here the attribute limit is hardcoded
-def get_receivables_by_seller(seller_id:, page: 1)
-  path = "sellers/#{seller_id}/receivables?limit=1000&page=#{page}"
-  response = @client.get(path: path, data: false)
-  JSON.parse(response)
-end
-```
-
-### Falta de padronização no retorno de erros
-
-Como serão tratados os erros? Retorno nil, false, hash?
 
 ## Instalação
 
-Crie uma nova gem:
-
-```bash
-bundle gem example_api_client
-```
-
-> Caso necessário, instale a versão indicada do Ruby:
-
-```bash
-rbenv install 3.0.6
-rbenv global 3.0.6
-ruby -v
-```
-
-Edite o arquivo `example_api_client.gemspec` e preencha os campos que possuem a tag `TODO:`.
-
-No arquivo `Rakefile` da gem criada, adicione:
-
-```bash
-require "drasil/tasks"
-```
-
-No arquivo `Gemfile`, adicione:
+Adicione Drasil ao seu Gemfile:
 
 ```ruby
-gem "drasil", git: "git@github.com:rsv-ink/drasil.git"
-
-group :test do
-  gem "rspec"
-  gem "webmock"
-end
+gem 'drasil', '~> 2.0'
 ```
 
-Para instalar as dependências, execute:
+Ou instale diretamente:
 
 ```bash
-bundle install
+gem install drasil
 ```
 
-Para gerar a estrutura de pastas do `drasil`, execute:
+## Início Rápido
 
-```bash
-bundle exec rake drasil:install
-```
+```ruby
+require 'drasil'
 
-## Agora chegou a hora de fazer as configurações da sua gem no arquivo:
+# Criar um cliente
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  headers: { "Authorization" => "Bearer SEU_TOKEN" }
+)
 
-```
-exemple/drasil/lib/exemplo_api_client.rb
-```
-
-## Estrutura de pastas dos Clients
-
-`lib/{nome_client}_api_client.rb` = este arquivo configura a biblioteca de cliente da API Zoop, especificando URLs, cabeçalhos, parsers e outras configurações importantes necessárias para interagir eficazmente o client. Ele também requer outros arquivos e bibliotecas para funcionar corretamente.
-
-`lib/{nome_client}_api_client` = é a pasta raiz do client. Ela serve como o diretório principal onde as pastas serão estruturadas. Nesta pasta, você encontrará os principais arquivos e subdiretórios que compõem a estrutura da biblioteca.
-
-`lib/{nome_client}_api_client/parsers` = contém módulos responsáveis por interpretar (parsear) as respostas do Client e transformá-las em formatos utilizáveis, como objetos ou dados estruturados, para facilitar o processamento no código do cliente. A gem já disponibiliza um template em `lib/{nome_client}_api_client/parsers/default_parser.rb`:
-
-```rb
-module ZoopApiClient
-  module Parsers
-    class DefaultParser < Drasil::Parser
-      def parse
-        data     = @response
-        metadata = {}
-
-        [data, metadata]
-      end
-    end
-  end
+# Definir um resource
+class User < Drasil::Base
+  attributes :id, :name, :email
 end
+
+# Registrar o resource
+client.register_resource(:users, User, parser: SeuParser, parser_path: "/users/*")
+
+# Usar!
+user = client.users.find(123)
+users = client.users.all
+new_user = client.users.create(name: "João", email: "joao@example.com")
 ```
 
-`lib/{nome_client}_api_client/resources` = abriga módulos e classes que representam recursos específicos da API Client, permitindo a interação com esses recursos de forma conveniente e abstrata, exemplo: "seller.rb"
+## Uso Baseado em Cliente (v2.0+)
 
-`{nome_client}_api_client/spec`= A pasta spec contém arquivos de teste que são usados para verificar se a biblioteca do cliente funciona corretamente.
+### Criando Clientes
 
-`{nome_client}_api_client/spec/fixtures/{resource}` = é usada para armazenar arquivos de "fixtures" que contêm respostas predefinidas de requisições de teste. Essas respostas são usadas nos testes para simular as respostas da API Zoop de maneira controlada e previsível, permitindo que os testes verifiquem o comportamento da biblioteca de cliente em diferentes cenários sem depender das respostas reais da API em um ambiente de produção ou de teste ao vivo. Isso ajuda a garantir que os testes sejam consistentes e repetíveis.
+A forma moderna de usar o Drasil é através de instâncias de cliente:
 
-`{nome_client}_api_client/spec/resources` = contém os testes propriamente ditos relacionados aos resources da biblioteca de cliente.
+```ruby
+# Cliente básico
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  headers: {
+    "Authorization" => "Bearer SEU_TOKEN",
+    "Content-Type" => "application/json"
+  }
+)
 
-`{nome_client}_api_client/spec/support` = guardam os helpers para testes rspecs, exemplo: WebMock.
+# Cliente com SSL
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  ssl_options: {
+    verify: true,
+    ca_file: "/caminho/para/ca-bundle.crt",
+    client_cert: OpenSSL::X509::Certificate.new(cert_pem),
+    client_key: OpenSSL::PKey::RSA.new(key_pem)
+  }
+)
 
-## Usos
+# Cliente com proxy
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  proxy_options: {
+    uri: "http://proxy.example.com:8080",
+    user: "usuario_proxy",
+    password: "senha_proxy"
+  }
+)
 
-### Erros
+# Cliente com paginação customizada
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  page_query_name: :pg,        # padrão: :page
+  per_page_query_name: :limit  # padrão: :per_page
+)
+```
 
-Quando a resposta da requisição não contém um status de sucesso, uma das exceções a seguir é lançado:
+### Múltiplos Clientes
 
-| Classe de Erro                     | Código de Status | Descrição                                                 |
-| ---------------------------------- | ---------------- | --------------------------------------------------------- |
-| `Drasil::BadRequestError`          | 400              | Requisição inválida.                                      |
-| `Drasil::UnauthorizedError`        | 401              | Falha na autenticação ou falta de autorização.            |
-| `Drasil::ForbiddenError`           | 403              | Acesso proibido ao recurso solicitado.                    |
-| `Drasil::ResourceNotFound`         | 404              | O recurso solicitado não foi encontrado.                  |
-| `Drasil::ProxyAuthError`           | 407              | Falha na autenticação de proxy.                           |
-| `Drasil::RequestTimeoutError`      | 408              | A requisição atingiu o tempo limite.                      |
-| `Drasil::ConflictError`            | 409              | Conflito com o estado atual do recurso.                   |
-| `Drasil::UnprocessableEntityError` | 422              | A entidade enviada na requisição não pode ser processada. |
-| `Drasil::TimeoutError`             | -                | Erro de tempo limite genérico.                            |
-| `Drasil::NilStatusError`           | -                | Resposta com status nulo.                                 |
-| `Drasil::ConnectionFailed`         | -                | Falha na conexão com o servidor.                          |
-| `Drasil::SSLError`                 | -                | Erro de SSL/TLS na conexão.                               |
-| `Drasil::ParsingError`             | -                | Erro ao analisar a resposta.                              |
+Execute múltiplos clientes de API simultaneamente:
+
+```ruby
+# Cliente Zoop
+zoop = Drasil::Client.new(
+  base_url: "https://api.zoop.com/v1/marketplaces/123",
+  headers: { "Authorization" => "Bearer ZOOP_TOKEN" }
+)
+
+# Cliente Shopify
+shopify = Drasil::Client.new(
+  base_url: "https://minhaloja.myshopify.com/admin/api/2024-01",
+  headers: { "X-Shopify-Access-Token" => "SHOPIFY_TOKEN" }
+)
+
+# Cliente Stripe
+stripe = Drasil::Client.new(
+  base_url: "https://api.stripe.com/v1",
+  headers: { "Authorization" => "Bearer STRIPE_TOKEN" }
+)
+
+# Registrar resources para cada cliente
+zoop.register_resource(:sellers, Seller, parser: ZoopParser, parser_path: "/sellers/*")
+shopify.register_resource(:products, Product, parser: ShopifyParser, parser_path: "/products/*")
+stripe.register_resource(:customers, Customer, parser: StripeParser, parser_path: "/customers/*")
+
+# Usar independentemente
+zoop_seller = zoop.sellers.find("abc123")
+shopify_product = shopify.products.find("prod_123")
+stripe_customer = stripe.customers.find("cus_123")
+```
+
+### Múltiplas Versões de API
+
+Use diferentes versões da mesma API:
+
+```ruby
+# Cliente API V1
+api_v1 = Drasil::Client.new(
+  base_url: "https://api.example.com/v1",
+  headers: { "Authorization" => "Bearer TOKEN" }
+)
+
+# Cliente API V2
+api_v2 = Drasil::Client.new(
+  base_url: "https://api.example.com/v2",
+  headers: { "Authorization" => "Bearer TOKEN" }
+)
+
+# Parsers diferentes para versões diferentes
+api_v1.register_resource(:users, User, parser: V1Parser, parser_path: "/users/*")
+api_v2.register_resource(:users, User, parser: V2Parser, parser_path: "/users/*")
+
+# Usar ambas as versões simultaneamente
+user_v1 = api_v1.users.find(123)  # Usa parser V1
+user_v2 = api_v2.users.find(123)  # Usa parser V2
+```
+
+## Uso Legado (v1.x - Descontinuado)
+
+> ⚠️ **Descontinuado**: Este padrão de uso está descontinuado e será removido na v3.0. Por favor, migre para a abordagem baseada em cliente.
+
+```ruby
+Drasil.configure do |config|
+  config.base_url = "https://api.example.com"
+  config.headers = { "Authorization" => "Bearer TOKEN" }
+  config.add_parser "/users/*", UserParser
+end
+
+# Ainda funciona mas mostra avisos de deprecação
+user = User.find(123)
+```
+
+Veja o [Guia de Migração](#guia-de-migração) para atualizar da v1.x para v2.x.
+
+## Tópicos Avançados
 
 ### Paginação
 
-Os resources podem ser paginados utilizando os métodos de classe `page` e `per_page`. Segue o exemplo:
+Resources podem ser paginados usando os métodos `page` e `per_page`:
 
 ```ruby
-sellers = ZoopApiClient::Seller.all.page(2).per_page(10)
-```
+# Paginar resultados
+users = client.users.all.page(2).per_page(20)
 
-Segundo o exemplo acima, uma requisição será feita para a rota `/sellers?page=2&limit=10`. A seguir, temos a documentação dos métodos relacionados à paginação:
+# Metadados de paginação
+users.total_pages    # Número total de páginas
+users.current_page   # Número da página atual
+users.next_page?     # Retorna true se houver mais páginas
 
-| Método       | Descrição                                          |
-| ------------ | -------------------------------------------------- |
-| total_pages  | Retorna o total de páginas disponíveis             |
-| next_page?   | Retorna true se houver mais páginas na API externa |
-| current_page | Retorna o número da página atual                   |
+# Iterar através das páginas
+page = 1
+loop do
+  users = client.users.all.page(page).per_page(100)
+  break unless users.next_page?
 
-### Criação de parsers
-
-Os parsers são as classes responsáveis por mapear a resposta de uma API externa para o padrão esperado pela `drasil`. Eles herdam da classe `Drasil::Parser`.
-
-> Um mesmo parser pode ser utilizado para rotas diferentes. Um novo parser deve ser criado sempre que não houver nenhum parser capaz de tratar a resposta de uma nova rota.
-
-#### Exemplos de parsers
-
-##### Quando a resposta da API é uma coleção
-
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "first_name": "John",
-      "last_name": "Doe"
-    }
-  ],
-  "info": {
-    "pages_count": 10,
-    "current_page": 1
-  }
-}
-```
-
-```ruby
-class Parser < Drasil::Parser
-  def parser
-    data = @response[:data]
-    metadata = {
-      total_pages: @response[:info][:pages_count],
-      page: @response[:info][:current_page]
-    }
-
-    return [data, metadata]
-  end
+  users.each { |user| processar(user) }
+  page += 1
 end
 ```
 
-##### Quando a resposta da API é um único resource
+### Tratamento de Erros
 
-```json
-{
-  {
-    "id": 1,
-    "first_name": "John",
-    "last_name": "Doe"
-  }
-}
-```
+Drasil lança exceções específicas para diferentes erros HTTP:
+
+| Classe de Exceção | Status HTTP | Descrição |
+|------------------|-------------|-----------|
+| `Drasil::BadRequestError` | 400 | Requisição inválida |
+| `Drasil::UnauthorizedError` | 401 | Falha na autenticação |
+| `Drasil::ForbiddenError` | 403 | Acesso proibido |
+| `Drasil::ResourceNotFound` | 404 | Recurso não encontrado |
+| `Drasil::ProxyAuthError` | 407 | Falha na autenticação do proxy |
+| `Drasil::RequestTimeoutError` | 408 | Timeout da requisição |
+| `Drasil::ConflictError` | 409 | Conflito de recurso |
+| `Drasil::UnprocessableEntityError` | 422 | Erro de validação |
+| `Drasil::ClientError` | 4xx | Erro genérico do cliente |
+| `Drasil::ServerError` | 5xx | Erro do servidor |
+| `Drasil::TimeoutError` | - | Timeout da requisição |
+| `Drasil::ConnectionFailed` | - | Falha na conexão |
+| `Drasil::SSLError` | - | Erro SSL/TLS |
+| `Drasil::ParsingError` | - | Erro ao processar resposta |
+
+**Uso:**
 
 ```ruby
-class Parser < Drasil::Parser
-  def parser
-    data = @response
+begin
+  user = client.users.find(123)
+rescue Drasil::ResourceNotFound => e
+  puts "Usuário não encontrado"
+rescue Drasil::UnauthorizedError => e
+  puts "Credenciais inválidas"
+rescue Drasil::ServerError => e
+  puts "Erro no servidor da API: #{e.message}"
+end
+```
+
+### Criação de Parsers
+
+Parsers transformam respostas da API no formato esperado pelo Drasil:
+
+```ruby
+# Parser para resposta de coleção
+class UserCollectionParser < Drasil::Parser
+  def parse
+    data = @response[:users]
+    metadata = {
+      total_pages: @response[:pagination][:total_pages],
+      page: @response[:pagination][:current_page]
+    }
+
+    [data, metadata]
+  end
+end
+
+# Parser para resposta de recurso único
+class UserParser < Drasil::Parser
+  def parse
+    data = @response[:user]
     metadata = {}
 
-    return [data, metadata]
+    [data, metadata]
   end
 end
+
+# Registrar parser com cliente
+client.register_resource(
+  :users,
+  User,
+  parser: UserCollectionParser,
+  parser_path: "/users"
+)
 ```
 
-#### Passo a passo para criar um novo parser:
+**Regras de Parser:**
+- Deve herdar de `Drasil::Parser`
+- Deve implementar o método `parse`
+- Deve retornar tupla `[data, metadata]`
+- Um parser pode ser reutilizado para múltiplas rotas
+- Use padrões de URL para combinar rotas (`/users/*` combina com `/users/123`)
 
-1. Crie uma classe, que herda da classe `Drasil::Parser`, na pasta `lib/{your_api_client}/parsers`.
+### Criação de Resources
+
+Resources representam entidades da API:
 
 ```ruby
-# lib/{your_api_client}/parsers/your_parser.rb
-module YourApiClient
-  module Parsers
-    class YourParser
-      def parse
-        ...
-      end
-    end
-  end
-end
-```
-
-2. No método `Drasil.configure` no arquivo de entrada do seu API client adicione a seguinte linha:
-
-```ruby
-config.add_parser "/resource-path", YourApiClient::Parsers::YourParser
-```
-
-### Criação de resources
-
-1. Crie um novo arquivo para o recurso: O nome do arquivo deve refletir o nome do recurso, por convenção em Ruby, deve estar em snake_case. Por exemplo, se você estiver criando um recurso para representar "vendedores" de uma API, pode nomear o arquivo como seller.rb.
-
-2. Defina a classe do recurso: No arquivo que você criou, defina a classe do recurso, herdando de Drasil::Base. Isso estabelece uma base para a classe do recurso.
-
-```rb
-module ZoopApiClient
-  class Seller < Drasil::Base
-  end
-end
-```
-
-3. Defina as associações: Use o método `has_one` ou `has_many` para definir as associações do recurso. Isso define como o recurso está relacionado a outros recursos na API.
-
-```rb
-class Seller < Drasil::Base
-  has_one :resource, "/resources/:id"
-  has_many :resources, "/resources"
-end
-```
-
-4. Defina os atributos: Liste os atributos que pertencem a este recurso usando o método attributes. Esses atributos correspondem aos campos ou propriedades que você espera encontrar nas respostas da API relacionadas a este recurso.
-
-```rb
-class Seller < Drasil::Base
-  has_one :resource, "/resources/:id"
-  has_many :resources, "/resources"
-
+class User < Drasil::Base
+  # Definir atributos
   attributes :id, :name, :email, :created_at, :updated_at
-end
-```
 
-5. Personalize os métodos, se necessário: Dependendo das necessidades específicas do recurso e da API, você pode adicionar métodos personalizados à classe do recurso para realizar ações específicas relacionadas a ele, como atualizações ou exclusões.
+  # Definir associações
+  has_one :profile, "/users/:id/profile"
+  has_many :posts, "/users/:id/posts"
 
-```rb
-class Seller < Drasil::Base
-  # ... outras definições de classe ...
+  # Métodos de classe customizados
+  def self.find_by_email(email)
+    where(email: email).first
+  end
 
-  # https://api.zoop.ws/v1/marketplaces/{marketplace_id}/sellers/search
-  # query_params:
-  #   taxpayer_id
-  #   ein
-  def self.find_by_cpf_or_cnpj(cpf: nil, cnpj: nil)
-    Seller.with(:search).where(taxpayer_id: cpf, ein: cnpj)
+  # Métodos de instância customizados
+  def full_name
+    "#{first_name} #{last_name}"
   end
 end
+
+# Uso
+client.register_resource(:users, User, parser: UserParser, parser_path: "/users/*")
+
+# Operações CRUD
+user = client.users.find(123)
+user = client.users.create(name: "João", email: "joao@example.com")
+user.update(name: "Maria")
+user.destroy
+
+# Consultas
+users = client.users.all
+users = client.users.where(status: "active")
+user = client.users.find_by_email("joao@example.com")
+
+# Associações
+profile = user.profile
+posts = user.posts
+```
+
+### Configuração SSL/mTLS
+
+Suporte completo para SSL e TLS mútuo (mTLS):
+
+```ruby
+# SSL básico com verificação
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  ssl_options: {
+    verify: true,
+    ca_file: "/caminho/para/ca-bundle.crt"
+  }
+)
+
+# TLS Mútuo (mTLS)
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  ssl_options: {
+    verify: true,
+    ca_file: "/caminho/para/ca-bundle.crt",
+    client_cert: OpenSSL::X509::Certificate.new(File.read("client.crt")),
+    client_key: OpenSSL::PKey::RSA.new(File.read("client.key")),
+    version: :TLSv1_2
+  }
+)
+
+# Exemplo real: Zoop mTLS
+ZOOP_CLIENT = Drasil::Client.new(
+  base_url: "https://api.zoop.com.br/v1/marketplaces/#{MARKETPLACE_ID}",
+  headers: {
+    "Authorization" => "Basic #{Base64.strict_encode64("#{ZOOP_KEY}:")}",
+    "x-api-key" => ZOOP_API_KEY
+  },
+  ssl_options: {
+    verify: true,
+    client_cert: OpenSSL::X509::Certificate.new(ENV['ZOOP_CERT_PEM']),
+    client_key: OpenSSL::PKey.read(ENV['ZOOP_KEY_PEM']),
+    ca_file: ENV['ZOOP_CA_FILE']
+  }
+)
+```
+
+### Configuração de Proxy
+
+Configure proxies HTTP:
+
+```ruby
+# Proxy simples
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  proxy_options: {
+    uri: "http://proxy.example.com:8080"
+  }
+)
+
+# Proxy autenticado
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  proxy_options: {
+    uri: "http://proxy.example.com:8080",
+    user: "usuario_proxy",
+    password: "senha_proxy"
+  }
+)
 ```
 
 ## Testes
 
-Para cada API Client devem ser construídos testes automatizados com a finalidade de garantir que todas as requisições e respostas estão sendo tratadas.
-A seguir serão listados alguns pontos interessantes ao criar um teste de uma API.
-
-### Simulação de resposta HTTP (Mock)
-
-Durante os testes não devem ser realizados requisições para sites externos, dessa forma é preciso que as respostas sejam simuladas. Para fazer isso, utilizamos a gem _Webmock_ que bloqueia requisições para endpoints externos e permite a definição de um retorno específico.
-
-Para criar simulações de resposta no teste basta utilizar o método helper _mock_request_. Através desse método é possível impedir que requisições sejam feitas para endpoints externos e o desenvolvedor defina uma resposta específica.
-
-Ao utilizar o _mock_request_ são definidos dois parâmetros, o primeiro é o tipo de requisição (**:POST**, **:GET**, **:UPDATE**) e o segundo a _url_ do endpoint. Além disso, deve ser definido o retorno quando a requisição é feita, através do _.to_return_. Neste método, são passados o status da resposta e o body da resposta.
-
-Observe que como body é passado um _json_ criado dentro da pasta `/spec/fixture`. Os bodys devem ser agrupados por tipo de resource e tenha por nome o status da resposta, como por exemplo "sellers/200.json".
-
-A seguir é apresentado um código que faz a simulação de respostas quando é feito um método :GET para #{BASE_URL}//sellers/1234.
-
-Nesse caso de teste, está sendo testado o método _find_ do resource Seller. São implementados duas simulações de resposta, uma para caso de seller encontrado e outra para o caso de recurso não encontrado.
+Use WebMock para simular requisições HTTP nos testes:
 
 ```ruby
-mock_request(:get, "/sellers/1234").to_return(status: 200, body: fixture("sellers/200.json"))
-```
+require 'webmock/rspec'
 
-```ruby
-require "spec_helper"
+RSpec.describe User do
+  let(:client) do
+    Drasil::Client.new(base_url: "https://api.example.com")
+  end
 
-RSpec.describe ZoopApiClient::Seller do
+  before do
+    client.register_resource(:users, User, parser: UserParser, parser_path: "/users/*")
+  end
+
   describe "#find" do
-    context "when seller exists" do
+    context "quando o usuário existe" do
       before do
-        mock_request(:get, "/sellers/1234")
-          .to_return(status: 200, body: fixture("sellers/200.json"))
+        stub_request(:get, "https://api.example.com/users/123")
+          .to_return(
+            status: 200,
+            body: { user: { id: 123, name: "João" } }.to_json,
+            headers: { "Content-Type" => "application/json" }
+          )
       end
-			...
+
+      it "retorna o usuário" do
+        user = client.users.find(123)
+        expect(user.name).to eq("João")
+      end
     end
 
-    context "when seller does not exist" do
+    context "quando o usuário não existe" do
       before do
-        mock_request(:get, "/sellers/1234")
-          .to_return(status: 404, body: fixture("sellers/404.json"))
+        stub_request(:get, "https://api.example.com/users/999")
+          .to_return(status: 404)
       end
-			...
+
+      it "lança ResourceNotFound" do
+        expect { client.users.find(999) }.to raise_error(Drasil::ResourceNotFound)
+      end
     end
   end
 end
 ```
 
-### Testar todos os possíveis retornos para cada resource
+## Guia de Migração
 
-Além de realizar a simulação de respostas é importante testar todos os possíveis tipos de retornos. Por exemplo, para o método find do resource seller.
+### Migrando da v1.x para v2.0
+
+**Antes (v1.x - Descontinuado):**
 
 ```ruby
-require "spec_helper"
-
-RSpec.describe ZoopApiClient::Seller do
-  describe "#find" do
-    context "when seller exists" do
-      ...
-    end
-
-    context "when seller does not exist" do
-      ...
-    end
-  end
+# Configuração global
+Drasil.configure do |config|
+  config.base_url = "https://api.example.com"
+  config.headers = { "Authorization" => "Bearer TOKEN" }
+  config.add_parser "/users/*", UserParser
 end
+
+# Uso direto do resource
+user = User.find(123)
 ```
 
-### Validação de respostas
-
-Além do que foi descrito antes, também é interessante realmente validar as respostas esperadas. Como por exemplo, a validação do tipo de status retornado e os valores retornados. Para auxiliar neste último existe um método helper que compara os atributos do resources com a fixture definida na resposta da definição.
+**Depois (v2.0 - Recomendado):**
 
 ```ruby
-require "spec_helper"
+# Abordagem baseada em cliente
+client = Drasil::Client.new(
+  base_url: "https://api.example.com",
+  headers: { "Authorization" => "Bearer TOKEN" }
+)
 
-RSpec.describe ZoopApiClient::Seller do
-  describe "#find" do
-    context "when seller exists" do
-      it { expect(subject).to be_a(ZoopApiClient::Seller) }
-      it { expect(subject.attributes).to match_fixture("sellers/200.json") }
-    end
+# Registrar resources
+client.register_resource(:users, User, parser: UserParser, parser_path: "/users/*")
 
-    context "when seller does not exist" do
-      it { expect { subject }.to raise_error(Faraday::ResourceNotFound) }
-    end
-  end
-end
+# Usar via cliente
+user = client.users.find(123)
+```
+
+**Benefícios da v2.0:**
+- ✅ Múltiplos clientes simultaneamente
+- ✅ Diferentes versões de API lado a lado
+- ✅ Thread-safe por design
+- ✅ Melhor suporte a multi-tenancy
+- ✅ Configurações isoladas
+
+## Estrutura de Projeto
+
+Ao criar uma nova gem de cliente de API:
+
+```
+seu_api_client/
+├── lib/
+│   ├── seu_api_client.rb          # Ponto de entrada principal
+│   └── seu_api_client/
+│       ├── parsers/                # Parsers de resposta
+│       │   ├── default_parser.rb
+│       │   └── collection_parser.rb
+│       └── resources/              # Resources da API
+│           ├── user.rb
+│           └── product.rb
+├── spec/
+│   ├── fixtures/                   # Respostas simuladas
+│   │   ├── users/
+│   │   │   ├── 200.json
+│   │   │   └── 404.json
+│   │   └── products/
+│   ├── resources/                  # Testes de resources
+│   │   ├── user_spec.rb
+│   │   └── product_spec.rb
+│   └── support/
+│       └── webmock.rb             # Helpers de teste
+└── seu_api_client.gemspec
 ```
 
 ## Referências
 
-- [Data Mapper Pattern - ROM](https://api.rom-rb.org/rom-http/)
-- [Shopify API](https://github.com/Shopify/shopify-api-ruby/tree/v13.1.0/lib/shopify_api/rest/resources/2023_07)
-- [Swagger Code Generator - OpenApi](https://github.com/OpenAPITools/openapi-generator)
-  - [Documentação de Instalação](https://openapi-generator.tech/docs/installation)
-- [Octokit (Github client)](https://github.com/octokit/octokit.rb)
-- [Dropbox](https://github.com/zendesk/dropbox-api)
-- [Google Api Client](https://github.com/googleapis/google-api-ruby-client/tree/main/google-api-client)
-- [Spyke](https://github.com/balvig/spyke)
-- [Twitter API Client](https://github.com/sferik/twitter) (biblioteca Ruby que fornece uma interface para acessar a API RESTful do Twitter)
-- [SoundCloud Ruby API Client](https://github.com/soundcloud/soundcloud-ruby) (biblioteca DEPRECATED Ruby que fornece uma interface para acessar a API RESTful do SoundCloud)
-- [JsonApiClient](https://github.com/JsonApiClient/json_api_client)
-- [ActiveResource Base (Ruby on Rails)](https://api.rubyonrails.org/v3.2.6/classes/ActiveResource/Base.html)
-- [Onde colocar código de chamada de API externa em um projeto Ruby on Rails](https://stackoverflow.com/questions/71030683/where-would-i-put-external-api-call-code-in-my-rails-project) ➝ [Usando Service Objects em Ruby on Rails](https://blog.appsignal.com/2020/06/17/using-service-objects-in-ruby-on-rails.html)
-- [RESTful Web Services Cookbook (PDF, ano 2010)](https://github.com/codeteenager/fe-ebook/blob/master/RESTful%20Web%20Services%20Cookbook.pdf)
+- [Spyke](https://github.com/balvig/spyke) - Cliente HTTP similar ao ActiveRecord
+- [Faraday](https://github.com/lostisland/faraday) - Biblioteca cliente HTTP
+- [Shopify API Ruby](https://github.com/Shopify/shopify-api-ruby) - Exemplo de cliente de API bem projetado
+- [Octokit](https://github.com/octokit/octokit.rb) - Cliente da API do GitHub
+- [Stripe Ruby](https://github.com/stripe/stripe-ruby) - Cliente da API Stripe
+- [RESTful Web Services Cookbook](https://github.com/codeteenager/fe-ebook/blob/master/RESTful%20Web%20Services%20Cookbook.pdf)
+
+## Contribuindo
+
+1. Faça um fork do repositório
+2. Crie sua branch de feature (`git checkout -b feature/funcionalidade-incrivel`)
+3. Commit suas mudanças (`git commit -m 'Adiciona funcionalidade incrível'`)
+4. Push para a branch (`git push origin feature/funcionalidade-incrivel`)
+5. Abra um Pull Request
+
+## Licença
+
+Esta gem está disponível como código aberto sob os termos da Licença MIT.
+
+## Suporte
+
+- GitHub Issues: https://github.com/rsv-ink/drasil/issues
+- Documentação: https://github.com/rsv-ink/drasil/wiki
+
+---
+
+**Feito com ❤️ pela [Reserva INK](https://reserva.ink)**

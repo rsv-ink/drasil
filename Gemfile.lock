@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    drasil (1.0.2)
+    drasil (2.0.0)
       multi_json (~> 1.15)
       spyke
 

@@ -35,7 +35,7 @@ module Drasil
     # Global configuration (DEPRECATED - use Drasil::Client.new instead)
     #
     # This method is maintained for backward compatibility but will be
-    # removed in version 3.0.0. Please migrate to the client-based approach.
+    # removed. Please migrate to the client-based approach.
     #
     # @deprecated Use {Drasil::Client.new} instead
     #
@@ -90,7 +90,7 @@ module Drasil
 
       warn <<~WARNING
 
-        [DEPRECATION] Drasil.configure is deprecated and will be removed in 3.0.0.
+        [DEPRECATION] Drasil.configure is deprecated and will be removed.
 
         Please migrate to the client-based approach:
 
@@ -108,7 +108,7 @@ module Drasil
           client.register_resource(:sellers, Seller, parser: SellerParser, parser_path: "/sellers/*")
           client.sellers.find("123")
 
-        See migration guide: https://github.com/rsv-ink/drasil/docs/MIGRATION_V2.md
+        See migration guide: https://github.com/rsv-ink/drasil/README.md#guia-de-migração
 
       WARNING
 

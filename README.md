@@ -1,8 +1,5 @@
 # Drasil
 
-[![Gem Version](https://badge.fury.io/rb/drasil.svg)](https://badge.fury.io/rb/drasil)
-[![Tests](https://github.com/rsv-ink/drasil/workflows/Tests/badge.svg)](https://github.com/rsv-ink/drasil/actions)
-
 **Drasil** é uma gem Ruby que fornece uma base para construir clientes de API com uma interface limpa e similar ao ActiveRecord. Construído sobre [Spyke](https://github.com/balvig/spyke) e [Faraday](https://github.com/lostisland/faraday), oferece uma arquitetura flexível baseada em clientes que suporta múltiplas conexões de API, versões e configurações simultaneamente.
 
 ## ✨ Funcionalidades
@@ -531,12 +528,20 @@ seu_api_client/
 
 ## Referências
 
-- [Spyke](https://github.com/balvig/spyke) - Cliente HTTP similar ao ActiveRecord
-- [Faraday](https://github.com/lostisland/faraday) - Biblioteca cliente HTTP
-- [Shopify API Ruby](https://github.com/Shopify/shopify-api-ruby) - Exemplo de cliente de API bem projetado
-- [Octokit](https://github.com/octokit/octokit.rb) - Cliente da API do GitHub
-- [Stripe Ruby](https://github.com/stripe/stripe-ruby) - Cliente da API Stripe
-- [RESTful Web Services Cookbook](https://github.com/codeteenager/fe-ebook/blob/master/RESTful%20Web%20Services%20Cookbook.pdf)
+- [Data Mapper Pattern - ROM](https://api.rom-rb.org/rom-http/)
+- [Shopify API](https://github.com/Shopify/shopify-api-ruby/tree/v13.1.0/lib/shopify_api/rest/resources/2023_07)
+- [Swagger Code Generator - OpenApi](https://github.com/OpenAPITools/openapi-generator)
+  - [Documentação de Instalação](https://openapi-generator.tech/docs/installation)
+- [Octokit (Github client)](https://github.com/octokit/octokit.rb)
+- [Dropbox](https://github.com/zendesk/dropbox-api)
+- [Google Api Client](https://github.com/googleapis/google-api-ruby-client/tree/main/google-api-client)
+- [Spyke](https://github.com/balvig/spyke)
+- [Twitter API Client](https://github.com/sferik/twitter) (biblioteca Ruby que fornece uma interface para acessar a API RESTful do Twitter)
+- [SoundCloud Ruby API Client](https://github.com/soundcloud/soundcloud-ruby) (biblioteca DEPRECATED Ruby que fornece uma interface para acessar a API RESTful do SoundCloud)
+- [JsonApiClient](https://github.com/JsonApiClient/json_api_client)
+- [ActiveResource Base (Ruby on Rails)](https://api.rubyonrails.org/v3.2.6/classes/ActiveResource/Base.html)
+- [Onde colocar código de chamada de API externa em um projeto Ruby on Rails](https://stackoverflow.com/questions/71030683/where-would-i-put-external-api-call-code-in-my-rails-project) ➝ [Usando Service Objects em Ruby on Rails](https://blog.appsignal.com/2020/06/17/using-service-objects-in-ruby-on-rails.html)
+- [RESTful Web Services Cookbook (PDF, ano 2010)](https://github.com/codeteenager/fe-ebook/blob/master/RESTful%20Web%20Services%20Cookbook.pdf)
 
 ## Contribuindo
 
@@ -545,16 +550,3 @@ seu_api_client/
 3. Commit suas mudanças (`git commit -m 'Adiciona funcionalidade incrível'`)
 4. Push para a branch (`git push origin feature/funcionalidade-incrivel`)
 5. Abra um Pull Request
-
-## Licença
-
-Esta gem está disponível como código aberto sob os termos da Licença MIT.
-
-## Suporte
-
-- GitHub Issues: https://github.com/rsv-ink/drasil/issues
-- Documentação: https://github.com/rsv-ink/drasil/wiki
-
----
-
-**Feito com ❤️ pela [Reserva INK](https://reserva.ink)**

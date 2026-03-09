@@ -71,7 +71,7 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
   - `include_root_in_json` agora respeita a configuração do cliente
 
 - **`Drasil::JSONParser`** - Agora aceita injeção de cliente
-  - Construtor modificado: `initialize(app, client: nil)`
+  - Construtor modificado: `initialize(app, options = {})` onde `options[:client]` é o cliente opcional
   - Usa o registro de parsers do cliente quando disponível
   - Volta para `Config.parse` global para retrocompatibilidade
   - Tratamento de erros melhorado com `ParserNotFoundError`
@@ -145,10 +145,13 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
 
 ### 📦 Dependências
 
-Sem mudanças nas dependências:
+Sem mudanças nas dependências de runtime:
 - `spyke` - Ainda a fundação para interface similar ao ActiveRecord
 - `multi_json` (~> 1.15) - Parsing de JSON
 - `faraday` - Cliente HTTP (via dependência do spyke)
+
+Dependências de desenvolvimento:
+- **Adicionado** `webmock` - Para mocking de requisições HTTP em testes
 
 ### 🔧 Mudanças Internas
 

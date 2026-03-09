@@ -44,9 +44,7 @@ module Drasil
     #   registry.register(:sellers, Seller, parser: SellerParser, parser_path: "/sellers/*")
     def register(name, resource_class, parser: nil, parser_path: nil)
       # Register parser if provided
-      if parser && parser_path
-        @client.config.add_parser(parser_path, parser)
-      end
+      @client.config.add_parser(parser_path, parser) if parser && parser_path
 
       # Create a new class that inherits from the resource class
       # and is bound to this client
@@ -107,12 +105,7 @@ module Drasil
     def create_scoped_class(resource_class)
       client = @client
 
-      Class.new(resource_class) do
-        # Define a name method for Spyke
-        define_singleton_method(:name) do
-          resource_class.name
-        end
-
+      scoped_class = Class.new(resource_class) do
         # Store reference to client
         @_drasil_client = client
 
@@ -136,6 +129,25 @@ module Drasil
         # Set the client
         self._drasil_client = client
       end
+
+      # Assign the scoped class to a dynamically created constant
+      # This makes the class inspectable with a meaningful name
+      if resource_class.name
+        # Create a scoped constant name based on the original class
+        # Example: ZoopApi::Resources::Seller becomes something more descriptive
+        const_name = "#{resource_class.name.split('::').last}_#{client.object_id}"
+
+        # Define the constant in a safe namespace to avoid collisions
+        # Use Drasil::ScopedResources as the namespace for all scoped classes
+        Drasil.const_set(:ScopedResources, Module.new) unless Drasil.const_defined?(:ScopedResources)
+
+        # Only set the constant if it doesn't exist yet
+        unless Drasil::ScopedResources.const_defined?(const_name, false)
+          Drasil::ScopedResources.const_set(const_name, scoped_class)
+        end
+      end
+
+      scoped_class
     end
   end
 end

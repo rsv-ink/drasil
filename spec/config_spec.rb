@@ -1,13 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe Drasil::Config do
-  class TestParser < Drasil::Parser
+  class ConfigTestParser < Drasil::Parser
     def parse
-      data = {
-        id: 1234,
-        first_name: "John",
-        last_name: "Chico"
-      }
+      data = @response
       metadata = {}
 
       [data, metadata]
@@ -16,7 +12,7 @@ RSpec.describe Drasil::Config do
   class InvalidParser; end
 
   describe "#add_parser" do
-    let(:parser) { TestParser }
+    let(:parser) { ConfigTestParser }
 
     subject { Drasil::Config.add_parser(path, parser) }
 
@@ -52,7 +48,9 @@ RSpec.describe Drasil::Config do
 
   describe "#parse" do
     before do
-      Drasil::Config.add_parser "/sellers/:id", TestParser
+      # Clear parsers before each test
+      Drasil::Config.instance_variable_set(:@parsers, {})
+      Drasil::Config.add_parser "/sellers/:id", ConfigTestParser
     end
 
     let(:url_pattern) { "/sellers/1234" }
@@ -98,7 +96,7 @@ RSpec.describe Drasil::Config do
           config.base_url = "https://api.example.com"
           config.headers = { "Authorization" => "Bearer test" }
           config.ssl_options = ssl_options
-          config.add_parser "/test", TestParser
+          config.add_parser "/test", ConfigTestParser
         end
 
         expect(Drasil::Config.ssl_options).to eq(ssl_options)
@@ -117,7 +115,7 @@ RSpec.describe Drasil::Config do
           config.base_url = "https://api.example.com"
           config.headers = { "Authorization" => "Bearer test" }
           config.proxy_options = proxy_options
-          config.add_parser "/test", TestParser
+          config.add_parser "/test", ConfigTestParser
         end
 
         expect(Drasil::Config.proxy_options).to eq(proxy_options)
@@ -134,7 +132,7 @@ RSpec.describe Drasil::Config do
           config.headers = { "Authorization" => "Bearer test" }
           config.ssl_options = ssl_options
           config.proxy_options = proxy_options
-          config.add_parser "/test", TestParser
+          config.add_parser "/test", ConfigTestParser
         end
 
         expect(Drasil::Config.ssl_options).to eq(ssl_options)
@@ -147,7 +145,7 @@ RSpec.describe Drasil::Config do
         Drasil.configure do |config|
           config.base_url = "https://api.example.com"
           config.headers = { "Authorization" => "Bearer test" }
-          config.add_parser "/test", TestParser
+          config.add_parser "/test", ConfigTestParser
         end
 
         expect(Drasil::Config.ssl_options).to be_nil

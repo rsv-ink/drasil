@@ -26,4 +26,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'multi_json', '~> 1.15'
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "byebug"
+  spec.add_development_dependency "webmock"
 end

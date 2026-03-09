@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    drasil (0.1.0)
+    drasil (1.0.2)
       multi_json (~> 1.15)
       spyke
 
@@ -31,6 +31,9 @@ GEM
     byebug (12.0.0)
     concurrent-ruby (1.3.5)
     connection_pool (2.5.4)
+    crack (1.0.1)
+      bigdecimal
+      rexml
     diff-lcs (1.6.2)
     drb (2.2.3)
     faraday (2.13.4)
@@ -41,6 +44,7 @@ GEM
       multipart-post (~> 2.0)
     faraday-net_http (3.4.1)
       net-http (>= 0.5.0)
+    hashdiff (1.2.1)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     json (2.13.2)
@@ -52,6 +56,7 @@ GEM
       uri
     public_suffix (6.0.2)
     rake (13.3.0)
+    rexml (3.4.4)
     rspec (3.13.1)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -75,6 +80,10 @@ GEM
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     uri (1.0.3)
+    webmock (3.26.1)
+      addressable (>= 2.8.0)
+      crack (>= 0.3.2)
+      hashdiff (>= 0.4.0, < 2.0.0)
 
 PLATFORMS
   ruby
@@ -85,6 +94,7 @@ DEPENDENCIES
   drasil!
   rake (~> 13.0)
   rspec
+  webmock
 
 BUNDLED WITH
    2.6.2

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Drasil
   # Faraday middleware for parsing JSON responses using registered parsers
   #
@@ -12,10 +14,11 @@ module Drasil
     # Creates a new JSONParser middleware instance
     #
     # @param app [Faraday::Middleware] The next middleware in the stack
-    # @param client [Drasil::Client, nil] The client instance (optional for backward compatibility)
-    def initialize(app, client: nil)
+    # @param options [Hash] Options hash (Faraday passes middleware args as Hash)
+    # @option options [Drasil::Client, nil] :client The client instance (optional for backward compatibility)
+    def initialize(app, options = {})
       super(app)
-      @client = client
+      @client = options[:client]
     end
 
     # Processes the response after request completion
@@ -58,7 +61,7 @@ module Drasil
     # @param http_status [Integer] The HTTP status code
     # @return [Boolean] true if status is an error (not 2xx)
     def error?(http_status)
-      !http_status.to_s.start_with?("2")
+      !http_status.to_s.start_with?('2')
     end
   end
 end

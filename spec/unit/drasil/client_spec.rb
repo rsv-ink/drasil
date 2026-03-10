@@ -205,12 +205,70 @@ RSpec.describe Drasil::Client do
       end
     end
 
-    it "adds custom middleware to connection" do
-      client = described_class.new(base_url: "https://api.example.com")
-      client.config.add_middleware(CustomMiddleware)
+    context "when configured with a block before connection builds" do
+      it "applies middleware to actual HTTP requests" do
+        client = described_class.new(base_url: "https://api.example.com") do |config|
+          config.add_middleware(CustomMiddleware)
+          config.add_parser("/test", TestParser)
+        end
 
-      # Just verify that middleware is in the config
-      expect(client.config.middlewares).to include(CustomMiddleware)
+        stub_request(:get, "https://api.example.com/test")
+          .with(headers: { "X-Custom" => "test" })
+          .to_return(status: 200, body: '{"data": {}}')
+
+        client.connection.get("/test")
+
+        expect(WebMock).to have_requested(:get, "https://api.example.com/test")
+          .with(headers: { "X-Custom" => "test" })
+      end
+
+      it "supports middleware with options" do
+        middleware_with_options = [CustomMiddleware, { option: "value" }]
+
+        client = described_class.new(base_url: "https://api.example.com") do |config|
+          config.add_middleware(middleware_with_options)
+        end
+
+        expect(client.config.middlewares).to include(middleware_with_options)
+      end
+
+      it "allows adding parsers in the same block" do
+        parser_class = Class.new(Drasil::Parser) do
+          def parse
+            [parsed_data, {}]
+          end
+        end
+
+        client = described_class.new(base_url: "https://api.example.com") do |config|
+          config.add_middleware(CustomMiddleware)
+          config.add_parser("/test/*", parser_class)
+        end
+
+        expect(client.config.middlewares).to include(CustomMiddleware)
+        expect(client.config.find_parser("/test/123")).to eq(parser_class)
+      end
+    end
+
+    context "deprecated: when added after client initialization" do
+      it "adds to config but does NOT affect the connection" do
+        client = described_class.new(base_url: "https://api.example.com") do |config|
+          config.add_parser("/test", TestParser)
+        end
+        client.config.add_middleware(CustomMiddleware)
+
+        # Middleware is in config
+        expect(client.config.middlewares).to include(CustomMiddleware)
+
+        # But it's NOT applied to requests (connection was already built)
+        stub_request(:get, "https://api.example.com/test")
+          .to_return(status: 200, body: '{"data": {}}')
+
+        client.connection.get("/test")
+
+        # X-Custom header was NOT added because middleware wasn't in the connection
+        expect(WebMock).to have_requested(:get, "https://api.example.com/test")
+          .with { |req| req.headers["X-Custom"].nil? }
+      end
     end
   end
 end

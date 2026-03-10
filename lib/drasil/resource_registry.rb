@@ -134,23 +134,6 @@ module Drasil
       # This prevents Spyke from inferring the URI from the scoped class name
       scoped_class.uri(resource_class.uri) if resource_class.respond_to?(:uri) && resource_class.uri
 
-      # Assign the scoped class to a dynamically created constant
-      # This makes the class inspectable with a meaningful name
-      if resource_class.name
-        # Create a scoped constant name based on the original class
-        # Example: ZoopApi::Resources::Seller becomes something more descriptive
-        const_name = "#{resource_class.name.split('::').last}_#{client.object_id}"
-
-        # Define the constant in a safe namespace to avoid collisions
-        # Use Drasil::ScopedResources as the namespace for all scoped classes
-        Drasil.const_set(:ScopedResources, Module.new) unless Drasil.const_defined?(:ScopedResources)
-
-        # Only set the constant if it doesn't exist yet
-        unless Drasil::ScopedResources.const_defined?(const_name, false)
-          Drasil::ScopedResources.const_set(const_name, scoped_class)
-        end
-      end
-
       scoped_class
     end
   end

@@ -34,6 +34,17 @@ module Drasil
     # @param ssl_options [Hash] SSL configuration options
     # @param proxy_options [Hash] Proxy configuration options
     # @param options [Hash] Additional configuration options (passed to Configuration)
+    # @yield [config] Optional block to configure the client before building connection
+    # @yieldparam config [Configuration] The configuration object
+    #
+    # @example Basic usage
+    #   client = Drasil::Client.new(base_url: "https://api.example.com")
+    #
+    # @example With block configuration
+    #   client = Drasil::Client.new(base_url: "https://api.example.com") do |config|
+    #     config.add_middleware(CustomMiddleware)
+    #     config.add_parser("/sellers/*", SellerParser)
+    #   end
     #
     # @example With SSL
     #   client = Drasil::Client.new(
@@ -55,7 +66,8 @@ module Drasil
       headers: {},
       ssl_options: nil,
       proxy_options: nil,
-      **options
+      **options,
+      &block
     )
       # Create instance configuration
       @config = Configuration.new(
@@ -66,7 +78,10 @@ module Drasil
         **options
       )
 
-      # Build Faraday connection
+      # Yield configuration for customization before building connection
+      yield(@config) if block_given?
+
+      # Build Faraday connection (after configuration is complete)
       @connection = build_connection
 
       # Create resource registry

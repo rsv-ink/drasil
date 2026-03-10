@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Drasil
   # Base class for Drasil resources
   #
@@ -50,12 +52,12 @@ module Drasil
       #   Seller.page(2).per_page(20)
       def page(number)
         page_query_name = if drasil_client
-          drasil_client.config.page_query_name
-        elsif defined?(Config) && Config.respond_to?(:page_query_name)
-          Config.page_query_name
-        else
-          :page
-        end
+                            drasil_client.config.page_query_name
+                          elsif defined?(Config) && Config.respond_to?(:page_query_name)
+                            Config.page_query_name
+                          else
+                            :page
+                          end
 
         where(Hash[page_query_name, number])
       end
@@ -72,18 +74,40 @@ module Drasil
       #   Seller.per_page(20).page(2)
       def per_page(number)
         per_page_query_name = if drasil_client
-          drasil_client.config.per_page_query_name
-        elsif defined?(Config) && Config.respond_to?(:per_page_query_name)
-          Config.per_page_query_name
-        else
-          :per_page
-        end
+                                drasil_client.config.per_page_query_name
+                              elsif defined?(Config) && Config.respond_to?(:per_page_query_name)
+                                Config.per_page_query_name
+                              else
+                                :per_page
+                              end
 
         where(Hash[per_page_query_name, number])
       end
 
-      # Gets the include_root_in_json setting from client or global config
+      # Gets the include_root_in_json setting with client-aware fallback
+      #
+      # Returns explicitly set value if available (via self.include_root_in_json = true),
+      # otherwise falls back to client or global configuration.
+      #
+      # @return [Boolean] The include_root_in_json setting
+      #
+      # @example Explicitly setting value (preserves Spyke DSL)
+      #   class User < Drasil::Base
+      #     self.include_root_in_json = true
+      #   end
+      #
+      # @example Using client config (no explicit value set)
+      #   client = Drasil::Client.new(include_root_in_json: true)
+      #   client.register_resource(:users, User)
+      #   client.users.include_root_in_json #=> true (from client config)
       def include_root_in_json
+        # Check if explicitly set via setter (e.g., self.include_root_in_json = true)
+        # The setter is provided by Spyke's class_attribute and sets @include_root_in_json
+        if instance_variable_defined?(:@include_root_in_json) && !@include_root_in_json.nil?
+          return @include_root_in_json
+        end
+
+        # Fall back to client or global config
         if drasil_client
           drasil_client.config.include_root_in_json
         elsif defined?(Config) && Config.respond_to?(:include_root_in_json)

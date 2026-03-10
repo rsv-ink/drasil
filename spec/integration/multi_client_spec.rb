@@ -15,6 +15,7 @@ RSpec.describe 'Multiple Clients Integration', type: :integration do
     end
 
     class Seller < Drasil::Base
+      uri 'sellers/(:id)'
       attributes :id, :name, :email
     end
   end
@@ -34,6 +35,7 @@ RSpec.describe 'Multiple Clients Integration', type: :integration do
     end
 
     class Seller < Drasil::Base
+      uri 'sellers/(:id)'
       attributes :id, :name, :email, :verified
     end
   end
@@ -49,34 +51,59 @@ RSpec.describe 'Multiple Clients Integration', type: :integration do
     end
 
     class Customer < Drasil::Base
+      uri 'customers/(:id)'
       attributes :id, :first_name, :last_name, :email
     end
   end
 
   describe 'Multiple API clients simultaneously' do
-    let(:zoop_v1_client) do
-      Drasil::Client.new(
+    it 'maintains separate configurations for each client' do
+      zoop_v1_client = Drasil::Client.new(
         base_url: 'https://api.zoop.com/v1/marketplaces/123',
         headers: { 'Authorization' => 'Bearer zoop-v1-token' }
       )
-    end
 
-    let(:zoop_v2_client) do
-      Drasil::Client.new(
+      zoop_v2_client = Drasil::Client.new(
         base_url: 'https://api.zoop.com/v2/marketplaces/123',
         headers: { 'Authorization' => 'Bearer zoop-v2-token' }
       )
-    end
 
-    let(:shopify_client) do
-      Drasil::Client.new(
+      shopify_client = Drasil::Client.new(
         base_url: 'https://mystore.myshopify.com/admin/api/2024-01',
         headers: { 'X-Shopify-Access-Token' => 'shopify-token' }
       )
+
+      expect(zoop_v1_client.config.base_url).to eq('https://api.zoop.com/v1/marketplaces/123')
+      expect(zoop_v2_client.config.base_url).to eq('https://api.zoop.com/v2/marketplaces/123')
+      expect(shopify_client.config.base_url).to eq('https://mystore.myshopify.com/admin/api/2024-01')
     end
 
-    before do
-      # Register resources for each client
+    it 'maintains separate connections for each client' do
+      zoop_v1_client = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v1/marketplaces/123',
+        headers: { 'Authorization' => 'Bearer zoop-v1-token' }
+      )
+
+      zoop_v2_client = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v2/marketplaces/123',
+        headers: { 'Authorization' => 'Bearer zoop-v2-token' }
+      )
+
+      shopify_client = Drasil::Client.new(
+        base_url: 'https://mystore.myshopify.com/admin/api/2024-01',
+        headers: { 'X-Shopify-Access-Token' => 'shopify-token' }
+      )
+
+      expect(zoop_v1_client.connection).not_to eq(zoop_v2_client.connection)
+      expect(zoop_v1_client.connection).not_to eq(shopify_client.connection)
+      expect(zoop_v2_client.connection).not_to eq(shopify_client.connection)
+    end
+
+    it 'maintains separate parsers for each client' do
+      zoop_v1_client = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v1/marketplaces/123',
+        headers: { 'Authorization' => 'Bearer zoop-v1-token' }
+      )
       zoop_v1_client.register_resource(
         :sellers,
         ZoopV1::Seller,
@@ -84,6 +111,10 @@ RSpec.describe 'Multiple Clients Integration', type: :integration do
         parser_path: '/sellers/*'
       )
 
+      zoop_v2_client = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v2/marketplaces/123',
+        headers: { 'Authorization' => 'Bearer zoop-v2-token' }
+      )
       zoop_v2_client.register_resource(
         :sellers,
         ZoopV2::Seller,
@@ -91,27 +122,6 @@ RSpec.describe 'Multiple Clients Integration', type: :integration do
         parser_path: '/sellers/*'
       )
 
-      shopify_client.register_resource(
-        :customers,
-        Shopify::Customer,
-        parser: Shopify::Parser,
-        parser_path: '/customers/*'
-      )
-    end
-
-    it 'maintains separate configurations for each client' do
-      expect(zoop_v1_client.config.base_url).to eq('https://api.zoop.com/v1/marketplaces/123')
-      expect(zoop_v2_client.config.base_url).to eq('https://api.zoop.com/v2/marketplaces/123')
-      expect(shopify_client.config.base_url).to eq('https://mystore.myshopify.com/admin/api/2024-01')
-    end
-
-    it 'maintains separate connections for each client' do
-      expect(zoop_v1_client.connection).not_to eq(zoop_v2_client.connection)
-      expect(zoop_v1_client.connection).not_to eq(shopify_client.connection)
-      expect(zoop_v2_client.connection).not_to eq(shopify_client.connection)
-    end
-
-    it 'maintains separate parsers for each client' do
       zoop_v1_parser = zoop_v1_client.config.find_parser('/sellers/123')
       zoop_v2_parser = zoop_v2_client.config.find_parser('/sellers/123')
 
@@ -120,19 +130,118 @@ RSpec.describe 'Multiple Clients Integration', type: :integration do
     end
 
     it 'allows accessing resources from different clients' do
+      zoop_v1_client = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v1/marketplaces/123',
+        headers: { 'Authorization' => 'Bearer zoop-v1-token' }
+      )
+      zoop_v1_client.register_resource(
+        :sellers,
+        ZoopV1::Seller,
+        parser: ZoopV1::Parser,
+        parser_path: '/sellers/*'
+      )
+
+      zoop_v2_client = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v2/marketplaces/123',
+        headers: { 'Authorization' => 'Bearer zoop-v2-token' }
+      )
+      zoop_v2_client.register_resource(
+        :sellers,
+        ZoopV2::Seller,
+        parser: ZoopV2::Parser,
+        parser_path: '/sellers/*'
+      )
+
+      shopify_client = Drasil::Client.new(
+        base_url: 'https://mystore.myshopify.com/admin/api/2024-01',
+        headers: { 'X-Shopify-Access-Token' => 'shopify-token' }
+      )
+      shopify_client.register_resource(
+        :customers,
+        Shopify::Customer,
+        parser: Shopify::Parser,
+        parser_path: '/customers/*'
+      )
+
       expect(zoop_v1_client.sellers).to be < ZoopV1::Seller
       expect(zoop_v2_client.sellers).to be < ZoopV2::Seller
       expect(shopify_client.customers).to be < Shopify::Customer
     end
 
     it 'resources use their respective client connections' do
+      zoop_v1_client = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v1/marketplaces/123',
+        headers: { 'Authorization' => 'Bearer zoop-v1-token' }
+      )
+      zoop_v1_client.register_resource(
+        :sellers,
+        ZoopV1::Seller,
+        parser: ZoopV1::Parser,
+        parser_path: '/sellers/*'
+      )
+
+      zoop_v2_client = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v2/marketplaces/123',
+        headers: { 'Authorization' => 'Bearer zoop-v2-token' }
+      )
+      zoop_v2_client.register_resource(
+        :sellers,
+        ZoopV2::Seller,
+        parser: ZoopV2::Parser,
+        parser_path: '/sellers/*'
+      )
+
+      shopify_client = Drasil::Client.new(
+        base_url: 'https://mystore.myshopify.com/admin/api/2024-01',
+        headers: { 'X-Shopify-Access-Token' => 'shopify-token' }
+      )
+      shopify_client.register_resource(
+        :customers,
+        Shopify::Customer,
+        parser: Shopify::Parser,
+        parser_path: '/customers/*'
+      )
+
       expect(zoop_v1_client.sellers.connection).to eq(zoop_v1_client.connection)
       expect(zoop_v2_client.sellers.connection).to eq(zoop_v2_client.connection)
       expect(shopify_client.customers.connection).to eq(shopify_client.connection)
     end
 
     context 'with stubbed HTTP requests' do
-      before do
+      it 'fetches data from different APIs using different parsers' do
+        zoop_v1_client = Drasil::Client.new(
+          base_url: 'https://api.zoop.com/v1/marketplaces/123',
+          headers: { 'Authorization' => 'Bearer zoop-v1-token' }
+        )
+        zoop_v1_client.register_resource(
+          :sellers,
+          ZoopV1::Seller,
+          parser: ZoopV1::Parser,
+          parser_path: '/sellers/*'
+        )
+
+        zoop_v2_client = Drasil::Client.new(
+          base_url: 'https://api.zoop.com/v2/marketplaces/123',
+          headers: { 'Authorization' => 'Bearer zoop-v2-token' }
+        )
+        zoop_v2_client.register_resource(
+          :sellers,
+          ZoopV2::Seller,
+          parser: ZoopV2::Parser,
+          parser_path: '/sellers/*'
+        )
+
+        shopify_client = Drasil::Client.new(
+          base_url: 'https://mystore.myshopify.com/admin/api/2024-01',
+          headers: { 'X-Shopify-Access-Token' => 'shopify-token' }
+        )
+        shopify_client.register_resource(
+          :customers,
+          Shopify::Customer,
+          parser: Shopify::Parser,
+          parser_path: '/customers/*'
+        )
+
         # Stub Zoop V1 response
         stub_request(:get, 'https://api.zoop.com/v1/marketplaces/123/sellers/abc')
           .to_return(
@@ -178,9 +287,7 @@ RSpec.describe 'Multiple Clients Integration', type: :integration do
             }.to_json,
             headers: { 'Content-Type' => 'application/json' }
           )
-      end
 
-      it 'fetches data from different APIs using different parsers' do
         seller_v1 = zoop_v1_client.sellers.find('abc')
         seller_v2 = zoop_v2_client.sellers.find('abc')
         customer = shopify_client.customers.find('xyz')
@@ -193,39 +300,53 @@ RSpec.describe 'Multiple Clients Integration', type: :integration do
   end
 
   describe 'Same API with multiple versions' do
-    let(:zoop_v1) do
-      client = Drasil::Client.new(
+    it 'allows using v1 and v2 simultaneously' do
+      zoop_v1 = Drasil::Client.new(
         base_url: 'https://api.zoop.com/v1/marketplaces/123'
       )
-      client.register_resource(
+      zoop_v1.register_resource(
         :sellers,
         ZoopV1::Seller,
         parser: ZoopV1::Parser,
         parser_path: '/sellers/*'
       )
-      client
-    end
 
-    let(:zoop_v2) do
-      client = Drasil::Client.new(
+      zoop_v2 = Drasil::Client.new(
         base_url: 'https://api.zoop.com/v2/marketplaces/123'
       )
-      client.register_resource(
+      zoop_v2.register_resource(
         :sellers,
         ZoopV2::Seller,
         parser: ZoopV2::Parser,
         parser_path: '/sellers/*'
       )
-      client
-    end
 
-    it 'allows using v1 and v2 simultaneously' do
       expect(zoop_v1.sellers).to be < ZoopV1::Seller
       expect(zoop_v2.sellers).to be < ZoopV2::Seller
       expect(zoop_v1.sellers).not_to eq(zoop_v2.sellers)
     end
 
     it 'maintains separate parser registries' do
+      zoop_v1 = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v1/marketplaces/123'
+      )
+      zoop_v1.register_resource(
+        :sellers,
+        ZoopV1::Seller,
+        parser: ZoopV1::Parser,
+        parser_path: '/sellers/*'
+      )
+
+      zoop_v2 = Drasil::Client.new(
+        base_url: 'https://api.zoop.com/v2/marketplaces/123'
+      )
+      zoop_v2.register_resource(
+        :sellers,
+        ZoopV2::Seller,
+        parser: ZoopV2::Parser,
+        parser_path: '/sellers/*'
+      )
+
       v1_parser = zoop_v1.config.find_parser('/sellers/123')
       v2_parser = zoop_v2.config.find_parser('/sellers/123')
 

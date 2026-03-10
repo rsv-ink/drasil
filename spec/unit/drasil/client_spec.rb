@@ -15,33 +15,35 @@ RSpec.describe Drasil::Client do
 
   describe "#initialize" do
     context "with required parameters" do
-      subject do
-        described_class.new(
-          base_url: "https://api.example.com"
-        )
-      end
-
       it "creates a client instance" do
-        expect(subject).to be_a(Drasil::Client)
+        client = described_class.new(base_url: "https://api.example.com")
+
+        expect(client).to be_a(Drasil::Client)
       end
 
       it "creates a configuration" do
-        expect(subject.config).to be_a(Drasil::Configuration)
-        expect(subject.config.base_url).to eq("https://api.example.com")
+        client = described_class.new(base_url: "https://api.example.com")
+
+        expect(client.config).to be_a(Drasil::Configuration)
+        expect(client.config.base_url).to eq("https://api.example.com")
       end
 
       it "creates a connection" do
-        expect(subject.connection).to be_a(Faraday::Connection)
+        client = described_class.new(base_url: "https://api.example.com")
+
+        expect(client.connection).to be_a(Faraday::Connection)
       end
 
       it "creates a resource registry" do
-        expect(subject.resource_registry).to be_a(Drasil::ResourceRegistry)
+        client = described_class.new(base_url: "https://api.example.com")
+
+        expect(client.resource_registry).to be_a(Drasil::ResourceRegistry)
       end
     end
 
     context "with all parameters" do
-      subject do
-        described_class.new(
+      it "passes all options to configuration" do
+        client = described_class.new(
           base_url: "https://api.example.com",
           headers: { "Authorization" => "Bearer token" },
           ssl_options: { verify: true },
@@ -49,98 +51,94 @@ RSpec.describe Drasil::Client do
           page_query_name: :pg,
           per_page_query_name: :limit
         )
-      end
 
-      it "passes all options to configuration" do
-        expect(subject.config.base_url).to eq("https://api.example.com")
-        expect(subject.config.headers).to eq({ "Authorization" => "Bearer token" })
-        expect(subject.config.ssl_options).to eq({ verify: true })
-        expect(subject.config.proxy_options).to eq({ uri: "http://proxy.com" })
-        expect(subject.config.page_query_name).to eq(:pg)
-        expect(subject.config.per_page_query_name).to eq(:limit)
+        expect(client.config.base_url).to eq("https://api.example.com")
+        expect(client.config.headers).to eq({ "Authorization" => "Bearer token" })
+        expect(client.config.ssl_options).to eq({ verify: true })
+        expect(client.config.proxy_options).to eq({ uri: "http://proxy.com" })
+        expect(client.config.page_query_name).to eq(:pg)
+        expect(client.config.per_page_query_name).to eq(:limit)
       end
     end
   end
 
   describe "#register_resource" do
-    let(:client) do
-      described_class.new(base_url: "https://api.example.com")
-    end
-
     context "without parser" do
       it "registers the resource" do
+        client = described_class.new(base_url: "https://api.example.com")
         result = client.register_resource(:tests, TestResource)
+
         expect(result).to be < TestResource
       end
 
       it "makes the resource available via method_missing" do
+        client = described_class.new(base_url: "https://api.example.com")
         client.register_resource(:tests, TestResource)
+
         expect(client.tests).to be < TestResource
       end
     end
 
     context "with parser" do
       it "registers the resource with parser" do
+        client = described_class.new(base_url: "https://api.example.com")
         result = client.register_resource(
           :tests,
           TestResource,
           parser: TestParser,
           parser_path: "/tests/*"
         )
+
         expect(result).to be < TestResource
       end
 
       it "adds parser to configuration" do
+        client = described_class.new(base_url: "https://api.example.com")
         client.register_resource(
           :tests,
           TestResource,
           parser: TestParser,
           parser_path: "/tests/*"
         )
+
         expect(client.config.find_parser("/tests/123")).to eq(TestParser)
       end
     end
   end
 
   describe "#method_missing" do
-    let(:client) do
-      described_class.new(base_url: "https://api.example.com")
-    end
-
-    before do
-      client.register_resource(:tests, TestResource)
-    end
-
     context "when resource is registered" do
       it "returns the resource class" do
+        client = described_class.new(base_url: "https://api.example.com")
+        client.register_resource(:tests, TestResource)
+
         expect(client.tests).to be < TestResource
       end
     end
 
     context "when resource is not registered" do
       it "raises NoMethodError" do
+        client = described_class.new(base_url: "https://api.example.com")
+
         expect { client.unknown_resource }.to raise_error(NoMethodError)
       end
     end
   end
 
   describe "#respond_to_missing?" do
-    let(:client) do
-      described_class.new(base_url: "https://api.example.com")
-    end
-
-    before do
-      client.register_resource(:tests, TestResource)
-    end
-
     context "when resource is registered" do
       it "returns true" do
+        client = described_class.new(base_url: "https://api.example.com")
+        client.register_resource(:tests, TestResource)
+
         expect(client.respond_to?(:tests)).to be true
       end
     end
 
     context "when resource is not registered" do
       it "returns false" do
+        client = described_class.new(base_url: "https://api.example.com")
+
         expect(client.respond_to?(:unknown_resource)).to be false
       end
     end
@@ -208,10 +206,6 @@ RSpec.describe Drasil::Client do
     end
 
     it "adds custom middleware to connection" do
-      client = described_class.new(base_url: "https://api.example.com")
-      client.config.add_middleware(CustomMiddleware)
-
-      # Rebuild connection to apply middleware
       client = described_class.new(base_url: "https://api.example.com")
       client.config.add_middleware(CustomMiddleware)
 

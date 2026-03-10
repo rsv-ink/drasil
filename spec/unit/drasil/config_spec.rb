@@ -12,61 +12,64 @@ RSpec.describe Drasil::Config do
   class InvalidParser; end
 
   describe "#add_parser" do
-    let(:parser) { ConfigTestParser }
-
-    subject { Drasil::Config.add_parser(path, parser) }
-
     context "when params are valid" do
-      let(:path) { "/sellers/:id" }
+      it "returns true" do
+        path = "/sellers/:id"
+        parser = ConfigTestParser
 
-      it { is_expected.to be_truthy }
+        result = Drasil::Config.add_parser(path, parser)
+
+        expect(result).to be_truthy
+      end
     end
 
     context "when params are invalid" do
       context "when path is invalid" do
-        let(:path) { "?[" }
+        it "raises RegexpError" do
+          path = "?["
+          parser = ConfigTestParser
 
-        it { expect { subject }.to raise_error(RegexpError) }
+          expect { Drasil::Config.add_parser(path, parser) }.to raise_error(RegexpError)
+        end
       end
 
       context "when parser is invalid" do
-        let(:path) { "/sellers/:id" }
-        let(:parser) { nil }
-
         context "when parser is nil" do
-          it { expect { subject }.to raise_error(ArgumentError) }
+          it "raises ArgumentError" do
+            path = "/sellers/:id"
+            parser = nil
+
+            expect { Drasil::Config.add_parser(path, parser) }.to raise_error(ArgumentError)
+          end
         end
 
         context "when parser is not a Parser" do
-          let(:parser) { InvalidParser }
+          it "raises ArgumentError" do
+            path = "/sellers/:id"
+            parser = InvalidParser
 
-          it { expect { subject }.to raise_error(ArgumentError) }
+            expect { Drasil::Config.add_parser(path, parser) }.to raise_error(ArgumentError)
+          end
         end
       end
     end
   end
 
   describe "#parse" do
-    before do
-      # Clear parsers before each test
-      Drasil::Config.instance_variable_set(:@parsers, {})
-      Drasil::Config.add_parser "/sellers/:id", ConfigTestParser
-    end
-
-    let(:url_pattern) { "/sellers/1234" }
-    let(:response) do
-      {
-        id: 1234,
-        first_name: "John",
-        last_name: "Chico"
-      }
-    end
-
-    subject { Drasil::Config.parse(url_pattern, response) }
-
     context "when there is a matching parser" do
       it "retuns data and metadata" do
-        data, metadata = subject
+        # Clear parsers before test
+        Drasil::Config.instance_variable_set(:@parsers, {})
+        Drasil::Config.add_parser "/sellers/:id", ConfigTestParser
+
+        url_pattern = "/sellers/1234"
+        response = {
+          id: 1234,
+          first_name: "John",
+          last_name: "Chico"
+        }
+
+        data, metadata = Drasil::Config.parse(url_pattern, response)
 
         expect(data[:id]).to eq 1234
         expect(data[:first_name]).to eq "John"
@@ -77,13 +80,11 @@ RSpec.describe Drasil::Config do
   end
 
   describe "SSL and Proxy Configuration" do
-    before(:each) do
-      Drasil::Config.ssl_options = nil
-      Drasil::Config.proxy_options = nil
-    end
-
     context 'when SSL options are configured' do
       it 'accepts SSL configuration' do
+        Drasil::Config.ssl_options = nil
+        Drasil::Config.proxy_options = nil
+
         ssl_options = {
           verify: true,
           ca_file: "/path/to/ca-bundle.crt",
@@ -105,6 +106,9 @@ RSpec.describe Drasil::Config do
 
     context 'when proxy options are configured' do
       it 'accepts proxy configuration' do
+        Drasil::Config.ssl_options = nil
+        Drasil::Config.proxy_options = nil
+
         proxy_options = {
           uri: "http://proxy.example.com:8080",
           user: "proxy_user",
@@ -124,6 +128,9 @@ RSpec.describe Drasil::Config do
 
     context 'when both SSL and proxy options are configured' do
       it 'accepts both configurations' do
+        Drasil::Config.ssl_options = nil
+        Drasil::Config.proxy_options = nil
+
         ssl_options = { verify: true }
         proxy_options = { uri: "http://proxy.example.com:8080" }
 
@@ -142,6 +149,9 @@ RSpec.describe Drasil::Config do
 
     context 'when no SSL or proxy options are configured' do
       it 'works without SSL and proxy configurations' do
+        Drasil::Config.ssl_options = nil
+        Drasil::Config.proxy_options = nil
+
         Drasil.configure do |config|
           config.base_url = "https://api.example.com"
           config.headers = { "Authorization" => "Bearer test" }

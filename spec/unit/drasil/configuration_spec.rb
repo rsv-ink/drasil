@@ -18,8 +18,8 @@ RSpec.describe Drasil::Configuration do
 
   describe "#initialize" do
     context "with all parameters" do
-      subject do
-        described_class.new(
+      it "sets all configuration values" do
+        config = described_class.new(
           base_url: "https://api.example.com",
           headers: { "Authorization" => "Bearer token" },
           include_root_in_json: true,
@@ -28,85 +28,101 @@ RSpec.describe Drasil::Configuration do
           ssl_options: { verify: true },
           proxy_options: { uri: "http://proxy.com" }
         )
-      end
 
-      it "sets all configuration values" do
-        expect(subject.base_url).to eq("https://api.example.com")
-        expect(subject.headers).to eq({ "Authorization" => "Bearer token" })
-        expect(subject.include_root_in_json).to eq(true)
-        expect(subject.page_query_name).to eq(:pg)
-        expect(subject.per_page_query_name).to eq(:limit)
-        expect(subject.ssl_options).to eq({ verify: true })
-        expect(subject.proxy_options).to eq({ uri: "http://proxy.com" })
+        expect(config.base_url).to eq("https://api.example.com")
+        expect(config.headers).to eq({ "Authorization" => "Bearer token" })
+        expect(config.include_root_in_json).to eq(true)
+        expect(config.page_query_name).to eq(:pg)
+        expect(config.per_page_query_name).to eq(:limit)
+        expect(config.ssl_options).to eq({ verify: true })
+        expect(config.proxy_options).to eq({ uri: "http://proxy.com" })
       end
 
       it "initializes empty parsers and middlewares" do
-        expect(subject.parsers).to eq({})
-        expect(subject.middlewares).to eq([])
+        config = described_class.new(
+          base_url: "https://api.example.com",
+          headers: { "Authorization" => "Bearer token" },
+          include_root_in_json: true,
+          page_query_name: :pg,
+          per_page_query_name: :limit,
+          ssl_options: { verify: true },
+          proxy_options: { uri: "http://proxy.com" }
+        )
+
+        expect(config.parsers).to eq({})
+        expect(config.middlewares).to eq([])
       end
     end
 
     context "with defaults" do
-      subject { described_class.new }
-
       it "uses default values" do
-        expect(subject.base_url).to be_nil
-        expect(subject.headers).to eq({})
-        expect(subject.include_root_in_json).to eq(false)
-        expect(subject.page_query_name).to eq(:page)
-        expect(subject.per_page_query_name).to eq(:per_page)
-        expect(subject.ssl_options).to be_nil
-        expect(subject.proxy_options).to be_nil
-        expect(subject.parsers).to eq({})
-        expect(subject.middlewares).to eq([])
+        config = described_class.new
+
+        expect(config.base_url).to be_nil
+        expect(config.headers).to eq({})
+        expect(config.include_root_in_json).to eq(false)
+        expect(config.page_query_name).to eq(:page)
+        expect(config.per_page_query_name).to eq(:per_page)
+        expect(config.ssl_options).to be_nil
+        expect(config.proxy_options).to be_nil
+        expect(config.parsers).to eq({})
+        expect(config.middlewares).to eq([])
       end
     end
   end
 
   describe "#add_parser" do
-    let(:config) { described_class.new }
-    let(:parser) { TestParser }
-
-    subject { config.add_parser(path, parser) }
-
     context "when params are valid" do
-      let(:path) { "/sellers/:id" }
-
       it "returns true" do
-        expect(subject).to be_truthy
+        config = described_class.new
+        path = "/sellers/:id"
+        parser = TestParser
+
+        result = config.add_parser(path, parser)
+
+        expect(result).to be_truthy
       end
 
       it "adds the parser to the registry" do
-        subject
+        config = described_class.new
+        path = "/sellers/:id"
+        parser = TestParser
+
+        config.add_parser(path, parser)
+
         expect(config.parsers[path]).to eq(parser)
       end
     end
 
     context "when params are invalid" do
       context "when path is invalid" do
-        let(:path) { "?[" }
-
         it "raises RegexpError" do
-          expect { subject }.to raise_error(RegexpError)
+          config = described_class.new
+          path = "?["
+          parser = TestParser
+
+          expect { config.add_parser(path, parser) }.to raise_error(RegexpError)
         end
       end
 
       context "when parser is invalid" do
-        let(:path) { "/sellers/:id" }
-
         context "when parser is nil" do
-          let(:parser) { nil }
-
           it "raises ArgumentError" do
-            expect { subject }.to raise_error(ArgumentError, "Parser cannot be nil")
+            config = described_class.new
+            path = "/sellers/:id"
+            parser = nil
+
+            expect { config.add_parser(path, parser) }.to raise_error(ArgumentError, "Parser cannot be nil")
           end
         end
 
         context "when parser is not a Parser" do
-          let(:parser) { InvalidParser }
-
           it "raises ArgumentError" do
-            expect { subject }.to raise_error(ArgumentError, "Parser is not a parser")
+            config = described_class.new
+            path = "/sellers/:id"
+            parser = InvalidParser
+
+            expect { config.add_parser(path, parser) }.to raise_error(ArgumentError, "Parser is not a parser")
           end
         end
       end
@@ -114,27 +130,28 @@ RSpec.describe Drasil::Configuration do
   end
 
   describe "#add_middleware" do
-    let(:config) { described_class.new }
-    let(:middleware) { double("Middleware") }
-
     it "adds middleware to the middlewares array" do
+      config = described_class.new
+      middleware = double("Middleware")
+
       config.add_middleware(middleware)
+
       expect(config.middlewares).to include(middleware)
     end
 
     it "allows multiple middlewares" do
+      config = described_class.new
+      middleware = double("Middleware")
       middleware2 = double("Middleware2")
+
       config.add_middleware(middleware)
       config.add_middleware(middleware2)
+
       expect(config.middlewares).to eq([middleware, middleware2])
     end
   end
 
   describe "#parse" do
-    # Create a fresh config for each test to avoid contamination
-    let(:config) { described_class.new }
-
-    # Use a unique parser class for this test suite
     class ConfigurationTestParser < Drasil::Parser
       def parse
         data = @response
@@ -143,24 +160,19 @@ RSpec.describe Drasil::Configuration do
       end
     end
 
-    before do
-      config.add_parser("/sellers/:id", ConfigurationTestParser)
-    end
-
-    let(:url) { "/sellers/1234" }
-    let(:response) do
-      {
-        id: 1234,
-        first_name: "John",
-        last_name: "Chico"
-      }
-    end
-
-    subject { config.parse(url, response) }
-
     context "when there is a matching parser" do
       it "returns data and metadata" do
-        data, metadata = subject
+        config = described_class.new
+        config.add_parser("/sellers/:id", ConfigurationTestParser)
+
+        url = "/sellers/1234"
+        response = {
+          id: 1234,
+          first_name: "John",
+          last_name: "Chico"
+        }
+
+        data, metadata = config.parse(url, response)
 
         expect(data[:id]).to eq(1234)
         expect(data[:first_name]).to eq("John")
@@ -171,10 +183,14 @@ RSpec.describe Drasil::Configuration do
     end
 
     context "when there is no matching parser" do
-      let(:url) { "/unknown/path" }
-
       it "raises ParserNotFoundError" do
-        expect { subject }.to raise_error(
+        config = described_class.new
+        config.add_parser("/sellers/:id", ConfigurationTestParser)
+
+        url = "/unknown/path"
+        response = {}
+
+        expect { config.parse(url, response) }.to raise_error(
           Drasil::ParserNotFoundError,
           "No parser found for URL: /unknown/path"
         )
@@ -183,21 +199,22 @@ RSpec.describe Drasil::Configuration do
   end
 
   describe "#find_parser" do
-    let(:config) { described_class.new }
-
-    before do
-      config.add_parser("/sellers/:id", TestParser)
-    end
-
     context "when there is a matching parser" do
       it "returns the parser class" do
+        config = described_class.new
+        config.add_parser("/sellers/:id", TestParser)
+
         parser_class = config.find_parser("/sellers/1234")
+
         expect(parser_class).to eq(TestParser)
       end
     end
 
     context "when there is no matching parser" do
       it "raises ParserNotFoundError" do
+        config = described_class.new
+        config.add_parser("/sellers/:id", TestParser)
+
         expect { config.find_parser("/unknown/path") }.to raise_error(
           Drasil::ParserNotFoundError,
           "No parser found for URL: /unknown/path"

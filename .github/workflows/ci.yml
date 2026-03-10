@@ -7,15 +7,14 @@ on:
     branches: "*"
 
 jobs:
-  test:
+  unit-tests:
+    name: Unit Tests - Ruby ${{ matrix.ruby-version }}
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['2.7', '3.0', '3.1', '3.2', '3.3']
-
-    name: Ruby ${{ matrix.ruby-version }}
+        ruby-version: ['3.3']
 
     steps:
     - uses: actions/checkout@v4
@@ -29,5 +28,45 @@ jobs:
     - name: Install dependencies
       run: bundle install --jobs 4 --retry 3
 
-    - name: Run tests
-      run: bundle exec rspec
+    - name: Run unit tests
+      run: bundle exec rspec spec/unit --format documentation
+
+  integration-tests:
+    name: Integration Tests - Ruby ${{ matrix.ruby-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-version: ['3.3']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby-version }}
+        bundler-cache: true
+
+    - name: Install dependencies
+      run: bundle install --jobs 4 --retry 3
+
+    - name: Run integration tests
+      run: bundle exec rspec spec/integration --format documentation
+
+  lint:
+    name: Lint & Style Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+
+    - name: Install dependencies
+      run: bundle install --jobs 4 --retry 3

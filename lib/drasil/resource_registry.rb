@@ -130,6 +130,10 @@ module Drasil
         self._drasil_client = client
       end
 
+      # Copy the URI from the parent class if it's explicitly set
+      # This prevents Spyke from inferring the URI from the scoped class name
+      scoped_class.uri(resource_class.uri) if resource_class.respond_to?(:uri) && resource_class.uri
+
       # Assign the scoped class to a dynamically created constant
       # This makes the class inspectable with a meaningful name
       if resource_class.name

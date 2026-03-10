@@ -54,19 +54,3 @@ jobs:
 
     - name: Run integration tests
       run: bundle exec rspec spec/integration --format documentation
-
-  lint:
-    name: Lint & Style Check
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: '3.3'
-        bundler-cache: true
-
-    - name: Install dependencies
-      run: bundle install --jobs 4 --retry 3

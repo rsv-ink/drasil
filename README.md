@@ -123,33 +123,33 @@ client = Drasil::Client.new(
 Execute múltiplos clientes de API simultaneamente:
 
 ```ruby
-# Cliente Zoop
-zoop = Drasil::Client.new(
-  base_url: "https://api.zoop.com/v1/marketplaces/123",
-  headers: { "Authorization" => "Bearer ZOOP_TOKEN" }
+# Cliente de Pagamentos
+payment_api = Drasil::Client.new(
+  base_url: "https://api.payments.example.com/v1",
+  headers: { "Authorization" => "Bearer PAYMENT_TOKEN" }
 )
 
-# Cliente Shopify
-shopify = Drasil::Client.new(
-  base_url: "https://minhaloja.myshopify.com/admin/api/2024-01",
-  headers: { "X-Shopify-Access-Token" => "SHOPIFY_TOKEN" }
+# Cliente de E-commerce
+ecommerce_api = Drasil::Client.new(
+  base_url: "https://api.ecommerce.example.com/v2",
+  headers: { "X-API-Key" => "ECOMMERCE_KEY" }
 )
 
-# Cliente Stripe
-stripe = Drasil::Client.new(
-  base_url: "https://api.stripe.com/v1",
-  headers: { "Authorization" => "Bearer STRIPE_TOKEN" }
+# Cliente de CRM
+crm_api = Drasil::Client.new(
+  base_url: "https://api.crm.example.com/v1",
+  headers: { "Authorization" => "Bearer CRM_TOKEN" }
 )
 
 # Registrar resources para cada cliente
-zoop.register_resource(:sellers, Seller, parser: ZoopParser, parser_path: "/sellers/*")
-shopify.register_resource(:products, Product, parser: ShopifyParser, parser_path: "/products/*")
-stripe.register_resource(:customers, Customer, parser: StripeParser, parser_path: "/customers/*")
+payment_api.register_resource(:transactions, Transaction, parser: PaymentParser, parser_path: "/transactions/*")
+ecommerce_api.register_resource(:products, Product, parser: EcommerceParser, parser_path: "/products/*")
+crm_api.register_resource(:customers, Customer, parser: CrmParser, parser_path: "/customers/*")
 
 # Usar independentemente
-zoop_seller = zoop.sellers.find("abc123")
-shopify_product = shopify.products.find("prod_123")
-stripe_customer = stripe.customers.find("cus_123")
+transaction = payment_api.transactions.find("txn_123")
+product = ecommerce_api.products.find("prod_456")
+customer = crm_api.customers.find("cust_789")
 ```
 
 ### Múltiplas Versões de API
@@ -180,7 +180,7 @@ user_v2 = api_v2.users.find(123)  # Usa parser V2
 
 ## Uso Legado (v1.x - Descontinuado)
 
-> ⚠️ **Descontinuado**: Este padrão de uso está descontinuado e será removido na v3.0. Por favor, migre para a abordagem baseada em cliente.
+> ⚠️ **Descontinuado**: Este padrão de uso está descontinuado e será removido na versão 3.0.0. Por favor, migre para a abordagem baseada em cliente.
 
 ```ruby
 Drasil.configure do |config|
@@ -369,18 +369,18 @@ client = Drasil::Client.new(
   }
 )
 
-# Exemplo real: Zoop mTLS
-ZOOP_CLIENT = Drasil::Client.new(
-  base_url: "https://api.zoop.com.br/v1/marketplaces/#{MARKETPLACE_ID}",
+# Exemplo com autenticação mútua completa
+SECURE_CLIENT = Drasil::Client.new(
+  base_url: "https://api.secure-service.example.com/v1",
   headers: {
-    "Authorization" => "Basic #{Base64.strict_encode64("#{ZOOP_KEY}:")}",
-    "x-api-key" => ZOOP_API_KEY
+    "Authorization" => "Basic #{Base64.strict_encode64("#{API_KEY}:#{API_SECRET}")}",
+    "x-api-key" => API_KEY
   },
   ssl_options: {
     verify: true,
-    client_cert: OpenSSL::X509::Certificate.new(ENV['ZOOP_CERT_PEM']),
-    client_key: OpenSSL::PKey.read(ENV['ZOOP_KEY_PEM']),
-    ca_file: ENV['ZOOP_CA_FILE']
+    client_cert: OpenSSL::X509::Certificate.new(ENV['CLIENT_CERT_PEM']),
+    client_key: OpenSSL::PKey.read(ENV['CLIENT_KEY_PEM']),
+    ca_file: ENV['CA_BUNDLE_FILE']
   }
 )
 ```

@@ -35,7 +35,7 @@ module Drasil
     # Global configuration (DEPRECATED - use Drasil::Client.new instead)
     #
     # This method is maintained for backward compatibility but will be
-    # removed. Please migrate to the client-based approach.
+    # removed in version 3.0.0. Please migrate to the client-based approach.
     #
     # @deprecated Use {Drasil::Client.new} instead
     #
@@ -90,7 +90,7 @@ module Drasil
 
       warn <<~WARNING
 
-        [DEPRECATION] Drasil.configure is deprecated and will be removed.
+        [DEPRECATION] Drasil.configure is deprecated and will be removed in version 3.0.0.
 
         Please migrate to the client-based approach:
 

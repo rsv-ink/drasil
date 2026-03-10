@@ -22,8 +22,8 @@ module Drasil
   #   buyers = client.buyers.where(status: "active")
   #
   # @example Multiple clients
-  #   zoop_v1 = Drasil::Client.new(base_url: "https://api.zoop.com/v1")
-  #   zoop_v2 = Drasil::Client.new(base_url: "https://api.zoop.com/v2")
+  #  client_v1 = Drasil::Client.new(base_url: "https://api.example.com/v1")
+  #  client_v2 = Drasil::Client.new(base_url: "https://api.example.com/v2")
   class Client
     attr_reader :config, :connection, :resource_registry
 

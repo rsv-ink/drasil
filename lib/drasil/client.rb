@@ -70,7 +70,7 @@ module Drasil
       &block
     )
       # Create instance configuration
-      @config = Configuration.new(
+      @config = Client::Configuration.new(
         base_url: base_url,
         headers: headers,
         ssl_options: ssl_options,

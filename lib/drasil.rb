@@ -12,7 +12,6 @@ require 'drasil/errors/resource_not_found_error'
 
 # Configuration and parsing
 require 'drasil/config'
-require 'drasil/configuration'
 require 'drasil/parser'
 require 'drasil/url_matcher'
 require 'drasil/url_pattern'
@@ -22,6 +21,7 @@ require 'drasil/response/raise_error'
 require 'drasil/json_parser'
 
 # Client-based architecture
+require 'drasil/client/configuration'
 require 'drasil/resource_registry'
 require 'drasil/client'
 

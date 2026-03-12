@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Drasil::Configuration do
+RSpec.describe Drasil::Client::Configuration do
   class TestParser < Drasil::Parser
     def parse
       data = {

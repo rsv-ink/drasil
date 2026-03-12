@@ -108,7 +108,7 @@ module Drasil
           client.register_resource(:sellers, Seller, parser: SellerParser, parser_path: "/sellers/*")
           client.sellers.find("123")
 
-        See migration guide: https://github.com/rsv-ink/drasil/README.md#guia-de-migração
+        See migration guide: https://github.com/rsv-ink/drasil/blob/main/README.md#guia-de-migração
 
       WARNING
 

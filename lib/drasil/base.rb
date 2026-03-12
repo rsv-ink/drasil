@@ -80,14 +80,21 @@ module Drasil
         where(Hash[per_page_query_name, number])
       end
 
-      # Gets the include_root_in_json setting with client-aware fallback
+      # Gets or sets the include_root_in_json setting with client-aware fallback
       #
-      # Returns explicitly set value if available (via self.include_root_in_json = true),
+      # When called with a value, sets the include_root_in_json setting.
+      # When called without a value, returns explicitly set value if available,
       # otherwise falls back to client or global configuration.
       #
+      # @param value [Boolean, nil] Optional value to set
       # @return [Boolean] The include_root_in_json setting
       #
-      # @example Explicitly setting value (preserves Spyke DSL)
+      # @example Setting value using DSL (preserves Spyke DSL compatibility)
+      #   class User < Drasil::Base
+      #     include_root_in_json true
+      #   end
+      #
+      # @example Setting value using assignment
       #   class User < Drasil::Base
       #     self.include_root_in_json = true
       #   end
@@ -96,7 +103,13 @@ module Drasil
       #   client = Drasil::Client.new(include_root_in_json: true)
       #   client.register_resource(:users, User)
       #   client.users.include_root_in_json #=> true (from client config)
-      def include_root_in_json
+      def include_root_in_json(value = :not_provided)
+        # If a value is explicitly provided, set it (DSL-style usage)
+        if value != :not_provided
+          self.include_root_in_json = value
+          return value
+        end
+
         # Check if explicitly set via setter (e.g., self.include_root_in_json = true)
         # The setter is provided by Spyke's class_attribute and sets @include_root_in_json
         if instance_variable_defined?(:@include_root_in_json) && !@include_root_in_json.nil?

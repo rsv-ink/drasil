@@ -5,32 +5,51 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-03-09
+## [2.0.0] - 2026-03-12
 
 ### 🎉 Mudanças Importantes
 
 Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padrão singleton global para suportar múltiplos clientes de API simultaneamente. Esta é uma grande melhoria arquitetural que habilita multi-tenancy, thread-safety e a capacidade de usar diferentes versões de API lado a lado.
 
+### 📋 Sumário Executivo
+
+**O que mudou:**
+- ✅ Nova classe `Drasil::Client` para criar instâncias isoladas de clientes de API
+- ✅ Suporte a múltiplos clientes simultâneos com configurações independentes
+- ✅ Arquitetura thread-safe sem estado global compartilhado
+- ✅ `Drasil::Client::Context` unifica configuração, parsers e recursos em um só lugar
+- ✅ `Drasil::ConfigResolver` implementa fallback inteligente de configuração
+- ✅ CI/CD com GitHub Actions testando em Ruby 3.1, 3.2 e 3.3
+- ✅ 109 testes passando com cobertura completa
+- ✅ README completamente reescrito com guias e exemplos
+- ⚠️ `Drasil.configure` agora deprecated (mas ainda funciona)
+
+**Impacto de Breaking Changes:**
+- ✅ **ZERO** - Código v1.x continua funcionando com avisos de descontinuação
+- ✅ Migração gradual recomendada, mas não obrigatória
+- ✅ Retrocompatibilidade total mantida
+
+
 ### ✨ Adicionado
 
 #### Componentes Principais
 
-- **`Drasil::Client`** - Nova classe principal de cliente para criar instâncias isoladas de cliente de API
-  - Suporta múltiplas conexões simultâneas a diferentes APIs
-  - Cada cliente possui sua própria configuração, conexão e registro de recursos isolados
-  - Thread-safe por design, sem estado global compartilhado
-  - Exemplo: `client = Drasil::Client.new(base_url: "https://api.example.com")`
+- **`Drasil::Client`** - Classe principal para criar instâncias isoladas de clientes de API
+  - Suporta múltiplos clientes simultâneos com configurações independentes
+  - Cada cliente possui seu próprio contexto, parsers, middlewares e recursos
+  - Thread-safe através de isolamento de estado por instância
+  - Suporte a configuração via parâmetros ou bloco de configuração
 
-- **`Drasil::Configuration`** - Classe de configuração baseada em instância (era baseada em módulo)
-  - Cada cliente agora possui sua própria instância de configuração
-  - Suporta todas as opções de configuração anteriores: `base_url`, `headers`, `ssl_options`, `proxy_options`, etc.
-  - Novos métodos de instância: `add_parser`, `add_middleware`, `find_parser`, `parse`
+- **`Drasil::Client::Context`** - Contexto unificado do cliente
+  - Gerencia configuração, parsers, middlewares e registro de recursos
+  - Substitui a abordagem anterior com `Configuration` e `ResourceRegistry` separados
+  - API simplificada e mais coesa para gerenciamento de componentes do cliente
+  - Métodos: `add_parser`, `add_middleware`, `register_resource`, `find_parser`
 
-- **`Drasil::ResourceRegistry`** - Novo sistema de gerenciamento de recursos
-  - Registra recursos dinamicamente por cliente
-  - Cria classes de recurso com escopo vinculadas a clientes específicos
-  - Registros de recursos isolados previnem conflitos entre clientes
-  - Exemplo: `client.register_resource(:users, User, parser: UserParser, parser_path: "/users/*")`
+- **`Drasil::ConfigResolver`** - Resolvedor de configuração com fallback
+  - Implementa cadeia de precedência: cliente → global → padrão
+  - Garante retrocompatibilidade com configuração global
+  - Encapsula lógica de resolução de configuração em um único local
 
 #### Classes de Erro
 
@@ -117,6 +136,14 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
 - Melhor gerenciamento de recursos com classes com escopo
 - Eliminada sobrecarga de lookup de estado global em caminhos críticos
 
+### 🚢 CI/CD
+
+- **GitHub Actions Workflow** (`.github/workflows/ci.yml`)
+  - Execução automática de testes em múltiplas versões do Ruby (3.1, 3.2, 3.3)
+  - Validação de build em diferentes ambientes
+  - Executado em pull requests e pushes para main
+  - Garante qualidade do código antes de merge
+
 ### 📚 Documentação
 
 - **Novo README** - Completamente reescrito com:
@@ -134,10 +161,30 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
 ### 🧪 Testes
 
 - **109 Testes Passando** - Cobertura completa de testes para nova arquitetura
-- **Testes de Integração** - Cenários de múltiplos clientes totalmente testados
-- **Testes de Retrocompatibilidade** - Garante que código v1.x ainda funciona
+
+- **Testes de Integração** (`spec/integration/multi_client_spec.rb`)
+  - Cenários completos de múltiplos clientes simultâneos
+  - Validação de isolamento entre clientes
+  - Testes de diferentes configurações coexistindo
+
+- **Testes Unitários Organizados** (movidos para `spec/unit/`)
+  - `spec/unit/drasil/client_spec.rb` - Testa inicialização e API do cliente
+  - `spec/unit/drasil/client/context_spec.rb` - Testa gerenciamento de contexto
+  - `spec/unit/drasil/config_spec.rb` - Testa configuração global (deprecated)
+  - `spec/unit/errors/error_spec.rb` - Testa classes de erro
+  - `spec/unit/drasil/url_matcher_spec.rb` - Testa matching de URLs
+
+- **Helpers de Teste Reutilizáveis** (`spec/support/helpers/`)
+  - `client_helper.rb` - Helpers para criação de clientes de teste
+  - `stub_helper.rb` - Helpers para stubbing de requests HTTP
+
+- **Shared Examples** (`spec/support/shared_examples/`)
+  - `parser_behavior.rb` - Comportamento esperado de parsers
+  - `resource_behavior.rb` - Comportamento esperado de recursos
+
+- **Testes de Retrocompatibilidade** - Garante que código v1.x ainda funciona com avisos
 - **Testes de Thread-Safety** - Valida uso concorrente de clientes
-- **Testes de Performance** - Benchmarks para validação de overhead
+- **Mocking com WebMock** - Todos os testes HTTP mockados para rapidez e confiabilidade
 
 ### 💔 Mudanças Incompatíveis
 
@@ -155,19 +202,150 @@ Dependências de desenvolvimento:
 
 ### 🔧 Mudanças Internas
 
-- Refatorada arquitetura principal de singleton para baseada em cliente
-- Melhorada organização do código com nova separação de componentes
-- Melhor tratamento de erros com classes de exceção customizadas
-- Gerenciamento de configuração aprimorado com abordagem baseada em instância
-- Stack de middleware mais limpa por cliente
+- **Refatoração Arquitetural Completa**: Migração de singleton para arquitetura baseada em cliente
+  - Removida dependência de estado global compartilhado
+  - Cada cliente mantém seu próprio estado isolado e conexão independente
+
+- **Unificação de Componentes**: Consolidação de `Configuration` + `ResourceRegistry` em `Context`
+  - Anteriormente: dois objetos separados gerenciando estado do cliente
+  - Agora: classe `Context` unificada com responsabilidades coesas
+  - Reduz complexidade e melhora manutenibilidade
+
+- **ConfigResolver**: Nova abstração para resolução de configuração
+  - Encapsula lógica de fallback: cliente → global → padrão
+  - Facilita manutenção da retrocompatibilidade
+  - Ponto único de verdade para resolução de config
+
+- **Melhorias na Organização do Código**:
+  - Separação clara entre componentes públicos e internos
+  - Melhor hierarquia de diretórios (`client/` para componentes do cliente)
+  - Tratamento de erros com classes de exceção customizadas e descritivas
+
+- **Stack de Middleware Por Cliente**: Cada cliente gerencia sua própria stack de middleware
+  - Elimina interferência entre clientes diferentes
+  - Permite customização específica por cliente
 
 ### 🎯 Caminho de Migração
 
 Para usuários atualizando da v1.x:
 
-1. **Nenhuma ação imediata necessária** - Código v1.x funciona com avisos de descontinuação
-2. **Recomendado**: Migrar para abordagem baseada em cliente para novo código
-4. **Suporte**: Avisos de descontinuação incluem exemplos de migração
+#### Passo 1: Atualização Segura
+```bash
+# Atualize a gem
+bundle update drasil
+
+# Rode seus testes - tudo deve continuar funcionando
+bundle exec rspec
+```
+
+**Resultado**: Seu código v1.x continua funcionando com avisos de descontinuação nos logs.
+
+#### Passo 2: Migração Gradual (Recomendado)
+
+**Antes (v1.x - Descontinuado)**:
+```ruby
+# config/initializers/drasil.rb
+Drasil.configure do |config|
+  config.base_url = "https://api.example.com"
+  config.headers = { "Authorization" => "Bearer token" }
+end
+
+# app/models/seller.rb
+class Seller < Drasil::Base
+  uri "sellers/:id"
+end
+
+# Uso
+seller = Seller.find("123")
+```
+
+**Depois (v2.0 - Recomendado)**:
+```ruby
+# app/services/api_client.rb
+class ApiClient
+  def self.instance
+    @instance ||= Drasil::Client.new(
+      base_url: "https://api.example.com",
+      headers: { "Authorization" => "Bearer token" }
+    ).tap do |client|
+      client.register_resource(:sellers, Seller,
+                              parser: SellerParser,
+                              parser_path: "/sellers/*")
+    end
+  end
+end
+
+# app/models/seller.rb
+class Seller < Drasil::Base
+  uri "sellers/:id"
+end
+
+# Uso
+client = ApiClient.instance
+seller = client.sellers.find("123")
+```
+
+#### Passo 3: Benefícios Adicionais
+
+Após migrar, você pode aproveitar novos recursos:
+
+```ruby
+# Múltiplos clientes simultâneos
+zoop_client = Drasil::Client.new(base_url: "https://api.zoop.com")
+shopify_client = Drasil::Client.new(base_url: "https://mystore.myshopify.com")
+
+# Diferentes versões da mesma API
+api_v1 = Drasil::Client.new(base_url: "https://api.example.com/v1")
+api_v2 = Drasil::Client.new(base_url: "https://api.example.com/v2")
+
+# Multi-tenancy com clientes isolados
+tenant_clients = tenants.map do |tenant|
+  Drasil::Client.new(
+    base_url: tenant.api_url,
+    headers: { "X-Tenant-ID" => tenant.id }
+  )
+end
+```
+
+#### Passo 4: Cronograma de Suporte
+
+- **v2.0.x**: Suporte completo para API v1.x com avisos de descontinuação
+- **v2.x.x**: API v1.x continuará funcionando durante toda a série v2
+- **v3.0.0**: API v1.x será removida (data a ser anunciada)
+
+#### Recursos de Ajuda
+
+- **Avisos de Descontinuação**: Incluem exemplos de código de migração
+- **README**: Seção dedicada ao guia de migração
+- **Testes**: Suite de testes de retrocompatibilidade garante que nada quebra
+
+### 📝 Notas da Release
+
+Esta é uma **release major** que representa uma evolução significativa da arquitetura do Drasil, mas foi projetada para ser **100% retrocompatível** com código v1.x.
+
+**Por que uma versão major?**
+- Introduz mudança arquitetural fundamental (singleton → client-based)
+- Depreca API global `Drasil.configure`
+- Estabelece nova direção para o futuro da gem
+
+**Por que é seguro atualizar?**
+- Todo código v1.x continua funcionando sem modificações
+- Avisos de descontinuação são informativos, não bloqueantes
+- Suite completa de testes de retrocompatibilidade
+- Documentação abrangente de migração
+
+**Próximos Passos:**
+- Coletar feedback da comunidade sobre a nova API
+- Melhorar documentação baseado em casos de uso reais
+- Considerar features adicionais para v2.1.0 (cache, retry, circuit breaker)
+- Planejar timeline de remoção da API v1.x (v3.0.0)
+
+**Motivação:**
+Esta refatoração foi motivada por necessidades reais de produção no ecossistema Reserva INK:
+- Necessidade de múltiplos clientes de API rodando simultaneamente
+- Problemas de thread-safety com singleton global
+- Dificuldade em testar código com estado global compartilhado
+- Requisitos de multi-tenancy com credenciais isoladas por tenant
 
 ---
 

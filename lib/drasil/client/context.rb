@@ -79,8 +79,8 @@ module Drasil
       # @example
       #   config.add_parser("/sellers/:id", SellerParser)
       def add_parser(path, parser_class)
-        raise ArgumentError, "Parser cannot be nil" if parser_class.nil?
-        raise ArgumentError, "Parser is not a parser" unless parser_class < Parser
+        raise ArgumentError, 'Parser cannot be nil' if parser_class.nil?
+        raise ArgumentError, 'Parser is not a parser' unless parser_class < Parser
 
         # Validate URL pattern
         UrlPattern.new(path)
@@ -152,6 +152,7 @@ module Drasil
       # @param parser [Class, nil] Optional parser class to register for this resource
       # @param parser_path [String, nil] Optional URL pattern for the parser
       # @return [Class] The scoped resource class
+      # @raise [ArgumentError] if parser is provided without parser_path or vice versa
       #
       # @example Without parser
       #   config.register_resource(:sellers, Seller)
@@ -159,7 +160,14 @@ module Drasil
       # @example With parser
       #   config.register_resource(:sellers, Seller, parser: SellerParser, parser_path: "/sellers/*")
       def register_resource(name, resource_class, parser: nil, parser_path: nil)
-        # Register parser if provided
+        # Validate parser arguments - both or neither must be provided
+        if parser && !parser_path
+          raise ArgumentError, 'parser_path must be provided when parser is specified'
+        elsif parser_path && !parser
+          raise ArgumentError, 'parser must be provided when parser_path is specified'
+        end
+
+        # Register parser if both are provided
         add_parser(parser_path, parser) if parser && parser_path
 
         # Create a new class that inherits from the resource class

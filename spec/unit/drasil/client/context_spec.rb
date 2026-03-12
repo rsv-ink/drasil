@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe Drasil::Client::Configuration do
+RSpec.describe Drasil::Client::Context do
+  let(:client) { instance_double(Drasil::Client, connection: double("connection")) }
   class TestParser < Drasil::Parser
     def parse
       data = {
@@ -20,6 +21,7 @@ RSpec.describe Drasil::Client::Configuration do
     context "with all parameters" do
       it "sets all configuration values" do
         config = described_class.new(
+          client: client,
           base_url: "https://api.example.com",
           headers: { "Authorization" => "Bearer token" },
           include_root_in_json: true,
@@ -38,8 +40,9 @@ RSpec.describe Drasil::Client::Configuration do
         expect(config.proxy_options).to eq({ uri: "http://proxy.com" })
       end
 
-      it "initializes empty parsers and middlewares" do
+      it "initializes empty parsers, middlewares, and resources" do
         config = described_class.new(
+          client: client,
           base_url: "https://api.example.com",
           headers: { "Authorization" => "Bearer token" },
           include_root_in_json: true,
@@ -51,12 +54,13 @@ RSpec.describe Drasil::Client::Configuration do
 
         expect(config.parsers).to eq({})
         expect(config.middlewares).to eq([])
+        expect(config.resources).to eq({})
       end
     end
 
     context "with defaults" do
       it "uses default values" do
-        config = described_class.new
+        config = described_class.new(client: client)
 
         expect(config.base_url).to be_nil
         expect(config.headers).to eq({})
@@ -67,6 +71,7 @@ RSpec.describe Drasil::Client::Configuration do
         expect(config.proxy_options).to be_nil
         expect(config.parsers).to eq({})
         expect(config.middlewares).to eq([])
+        expect(config.resources).to eq({})
       end
     end
   end
@@ -74,7 +79,7 @@ RSpec.describe Drasil::Client::Configuration do
   describe "#add_parser" do
     context "when params are valid" do
       it "returns true" do
-        config = described_class.new
+        config = described_class.new(client: client)
         path = "/sellers/:id"
         parser = TestParser
 
@@ -84,7 +89,7 @@ RSpec.describe Drasil::Client::Configuration do
       end
 
       it "adds the parser to the registry" do
-        config = described_class.new
+        config = described_class.new(client: client)
         path = "/sellers/:id"
         parser = TestParser
 
@@ -97,7 +102,7 @@ RSpec.describe Drasil::Client::Configuration do
     context "when params are invalid" do
       context "when path is invalid" do
         it "raises RegexpError" do
-          config = described_class.new
+          config = described_class.new(client: client)
           path = "?["
           parser = TestParser
 
@@ -108,7 +113,7 @@ RSpec.describe Drasil::Client::Configuration do
       context "when parser is invalid" do
         context "when parser is nil" do
           it "raises ArgumentError" do
-            config = described_class.new
+            config = described_class.new(client: client)
             path = "/sellers/:id"
             parser = nil
 
@@ -118,7 +123,7 @@ RSpec.describe Drasil::Client::Configuration do
 
         context "when parser is not a Parser" do
           it "raises ArgumentError" do
-            config = described_class.new
+            config = described_class.new(client: client)
             path = "/sellers/:id"
             parser = InvalidParser
 
@@ -131,7 +136,7 @@ RSpec.describe Drasil::Client::Configuration do
 
   describe "#add_middleware" do
     it "adds middleware to the middlewares array" do
-      config = described_class.new
+      config = described_class.new(client: client)
       middleware = double("Middleware")
 
       config.add_middleware(middleware)
@@ -140,7 +145,7 @@ RSpec.describe Drasil::Client::Configuration do
     end
 
     it "allows multiple middlewares" do
-      config = described_class.new
+      config = described_class.new(client: client)
       middleware = double("Middleware")
       middleware2 = double("Middleware2")
 
@@ -162,7 +167,7 @@ RSpec.describe Drasil::Client::Configuration do
 
     context "when there is a matching parser" do
       it "returns data and metadata" do
-        config = described_class.new
+        config = described_class.new(client: client)
         config.add_parser("/sellers/:id", ConfigurationTestParser)
 
         url = "/sellers/1234"
@@ -184,7 +189,7 @@ RSpec.describe Drasil::Client::Configuration do
 
     context "when there is no matching parser" do
       it "raises ParserNotFoundError" do
-        config = described_class.new
+        config = described_class.new(client: client)
         config.add_parser("/sellers/:id", ConfigurationTestParser)
 
         url = "/unknown/path"
@@ -201,7 +206,7 @@ RSpec.describe Drasil::Client::Configuration do
   describe "#find_parser" do
     context "when there is a matching parser" do
       it "returns the parser class" do
-        config = described_class.new
+        config = described_class.new(client: client)
         config.add_parser("/sellers/:id", TestParser)
 
         parser_class = config.find_parser("/sellers/1234")
@@ -212,7 +217,7 @@ RSpec.describe Drasil::Client::Configuration do
 
     context "when there is no matching parser" do
       it "raises ParserNotFoundError" do
-        config = described_class.new
+        config = described_class.new(client: client)
         config.add_parser("/sellers/:id", TestParser)
 
         expect { config.find_parser("/unknown/path") }.to raise_error(
@@ -234,7 +239,7 @@ RSpec.describe Drasil::Client::Configuration do
           version: :TLSv1_2
         }
 
-        config = described_class.new(ssl_options: ssl_options)
+        config = described_class.new(client: client, ssl_options: ssl_options)
 
         expect(config.ssl_options).to eq(ssl_options)
       end
@@ -248,7 +253,7 @@ RSpec.describe Drasil::Client::Configuration do
           password: "proxy_pass"
         }
 
-        config = described_class.new(proxy_options: proxy_options)
+        config = described_class.new(client: client, proxy_options: proxy_options)
 
         expect(config.proxy_options).to eq(proxy_options)
       end
@@ -260,6 +265,7 @@ RSpec.describe Drasil::Client::Configuration do
         proxy_options = { uri: "http://proxy.example.com:8080" }
 
         config = described_class.new(
+          client: client,
           ssl_options: ssl_options,
           proxy_options: proxy_options
         )
@@ -271,7 +277,7 @@ RSpec.describe Drasil::Client::Configuration do
 
     context "when no SSL or proxy options are configured" do
       it "works without SSL and proxy configurations" do
-        config = described_class.new
+        config = described_class.new(client: client)
 
         expect(config.ssl_options).to be_nil
         expect(config.proxy_options).to be_nil

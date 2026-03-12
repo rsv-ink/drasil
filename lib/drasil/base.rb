@@ -51,13 +51,11 @@ module Drasil
       # @example
       #   Seller.page(2).per_page(20)
       def page(number)
-        page_query_name = if drasil_client
-                            drasil_client.config.page_query_name
-                          elsif defined?(Config) && Config.respond_to?(:page_query_name)
-                            Config.page_query_name
-                          else
-                            :page
-                          end
+        page_query_name = ConfigResolver.resolve(
+          drasil_client,
+          :page_query_name,
+          default: :page
+        )
 
         where(Hash[page_query_name, number])
       end
@@ -73,13 +71,11 @@ module Drasil
       # @example
       #   Seller.per_page(20).page(2)
       def per_page(number)
-        per_page_query_name = if drasil_client
-                                drasil_client.config.per_page_query_name
-                              elsif defined?(Config) && Config.respond_to?(:per_page_query_name)
-                                Config.per_page_query_name
-                              else
-                                :per_page
-                              end
+        per_page_query_name = ConfigResolver.resolve(
+          drasil_client,
+          :per_page_query_name,
+          default: :per_page
+        )
 
         where(Hash[per_page_query_name, number])
       end
@@ -108,13 +104,7 @@ module Drasil
         end
 
         # Fall back to client or global config
-        if drasil_client
-          drasil_client.config.include_root_in_json
-        elsif defined?(Config) && Config.respond_to?(:include_root_in_json)
-          Config.include_root_in_json
-        else
-          false
-        end
+        ConfigResolver.resolve(drasil_client, :include_root_in_json, default: false)
       end
     end
   end

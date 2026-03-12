@@ -24,7 +24,7 @@ RSpec.describe Drasil::Client do
       it "creates a configuration" do
         client = described_class.new(base_url: "https://api.example.com")
 
-        expect(client.config).to be_a(Drasil::Client::Configuration)
+        expect(client.config).to be_a(Drasil::Client::Context)
         expect(client.config.base_url).to eq("https://api.example.com")
       end
 
@@ -34,11 +34,6 @@ RSpec.describe Drasil::Client do
         expect(client.connection).to be_a(Faraday::Connection)
       end
 
-      it "creates a resource registry" do
-        client = described_class.new(base_url: "https://api.example.com")
-
-        expect(client.resource_registry).to be_a(Drasil::ResourceRegistry)
-      end
     end
 
     context "with all parameters" do

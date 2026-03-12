@@ -25,7 +25,7 @@ module Drasil
   #  client_v1 = Drasil::Client.new(base_url: "https://api.example.com/v1")
   #  client_v2 = Drasil::Client.new(base_url: "https://api.example.com/v2")
   class Client
-    attr_reader :config, :connection, :resource_registry
+    attr_reader :config, :connection
 
     # Creates a new Drasil client instance
     #
@@ -69,8 +69,11 @@ module Drasil
       **options,
       &block
     )
-      # Create instance configuration
-      @config = Client::Configuration.new(
+      # Create instance context (must be created before connection)
+      # Note: We pass self to context, but context is created before connection.
+      # This is safe because context only stores the reference for later use.
+      @config = Client::Context.new(
+        client: self,
         base_url: base_url,
         headers: headers,
         ssl_options: ssl_options,
@@ -83,9 +86,6 @@ module Drasil
 
       # Build Faraday connection (after configuration is complete)
       @connection = build_connection
-
-      # Create resource registry
-      @resource_registry = ResourceRegistry.new(self)
     end
 
     # Registers a resource with this client
@@ -99,7 +99,7 @@ module Drasil
     # @example
     #   client.register_resource(:sellers, Seller, parser: SellerParser, parser_path: "/sellers/*")
     def register_resource(name, resource_class, parser: nil, parser_path: nil)
-      @resource_registry.register(name, resource_class, parser: parser, parser_path: parser_path)
+      @config.register_resource(name, resource_class, parser: parser, parser_path: parser_path)
     end
 
     # Provides dynamic access to registered resources
@@ -108,8 +108,8 @@ module Drasil
     #   client.sellers.find("123")
     #   client.buyers.where(status: "active")
     def method_missing(method_name, *args, &block)
-      if @resource_registry.registered?(method_name)
-        @resource_registry.get(method_name)
+      if @config.resource_registered?(method_name)
+        @config.get_resource(method_name)
       else
         super
       end
@@ -121,7 +121,7 @@ module Drasil
     # @param include_private [Boolean] Whether to include private methods
     # @return [Boolean]
     def respond_to_missing?(method_name, include_private = false)
-      @resource_registry.registered?(method_name) || super
+      @config.resource_registered?(method_name) || super
     end
 
     private

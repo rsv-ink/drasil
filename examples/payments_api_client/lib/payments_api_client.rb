@@ -8,7 +8,8 @@ require "payments_api_client/parsers/default_parser"
 require "payments_api_client/resources/seller"
 
 module PaymentsApiClient
-  BASE_URL = "your_base_url_here"
+  # Replace with your API's base URL (must be absolute)
+  BASE_URL = "https://api.example.com"
 
   class << self
     # The API client for this gem

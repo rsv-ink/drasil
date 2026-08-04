@@ -28,10 +28,16 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
 - ✅ Código v1.x continua funcionando com avisos de descontinuação
 - ✅ Formato do corpo das requisições preservado (sem root por padrão, como na v1.x)
 - ✅ Migração gradual recomendada, mas não obrigatória
-- ⚠️ **Única mudança de comportamento**: `parser_path` passou a casar caminhos com precisão
-  (`/users/*` não combina mais com `/usersXYZ` nem `/admin/users_backup`) e o parser mais
-  específico ganha independente da ordem de registro. Quem dependia do casamento frouxo
-  precisa revisar os padrões registrados.
+- ⚠️ **Mudanças de comportamento** (verificadas por comparação direta com a v1.x):
+  1. `parser_path` passou a casar caminhos com precisão — `/users/*` não combina mais com
+     `/usersXYZ` nem `/admin/users_backup` — e o parser mais específico ganha independente
+     da ordem de registro. Quem dependia do casamento frouxo precisa revisar os padrões.
+  2. `config.include_root_in_json = true` no `Drasil.configure` **era ignorado** na v1.x
+     (o corpo saía sempre sem root) e agora é aplicado de fato. Quem tinha essa flag
+     ligada passa a enviar `{"user" => {...}}`; para manter o corpo da v1.x, remova a flag
+     ou defina `false`.
+  3. `page(n)`/`per_page(n)` sem client e sem configuração global geravam a chave `nil`
+     (`{ nil => 2 }`, produzindo `?=2` na URL) e agora usam `:page`/`:per_page`.
 
 
 ### ✨ Adicionado
@@ -147,6 +153,10 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
 - `Drasil::Config.add_middleware` levantava `NoMethodError` em toda chamada (inicializava um Hash)
 - Corpo de resposta vazio (204) não levanta mais `MultiJson::ParseError`; JSON malformado agora
   vira `Drasil::ParsingError`
+- `Drasil::Config.parsers` retornava `nil` antes do primeiro `add_parser` e agora retorna `{}`
+- `Drasil::Config.parse` sem padrão correspondente levantava `StandardError` com a mensagem
+  "Parser not found"; agora levanta `Drasil::ParserNotFoundError` (que também é `StandardError`)
+  com a URL na mensagem
 
 ### 🚀 Performance
 

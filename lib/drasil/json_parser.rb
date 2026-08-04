@@ -16,7 +16,7 @@ module Drasil
     # @param app [Faraday::Middleware] The next middleware in the stack
     # @param options [Hash] Options hash (Faraday passes middleware args as Hash)
     # @option options [Drasil::Client, nil] :client The client instance (optional for backward compatibility)
-    def initialize(app, options = {})
+    def initialize(app = nil, options = {})
       super(app)
       @client = options[:client]
     end

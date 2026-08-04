@@ -9,7 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors = ["Lucas Sousa", "João Alves"]
   spec.email = ["joao.alves@reserva.ink"]
 
-  spec.required_ruby_version = ">= 2.6.0"
+  # Faraday 2 requires >= 3.0 and ActiveSupport 8 requires >= 3.2
+  spec.required_ruby_version = ">= 3.2.0"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -26,4 +27,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'multi_json', '~> 1.15'
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "byebug"
+  spec.add_development_dependency "webmock"
 end

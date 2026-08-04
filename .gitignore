@@ -6,3 +6,6 @@
 /pkg/
 /spec/reports/
 /tmp/
+
+# Debug session history
+.byebug_history

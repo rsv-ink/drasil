@@ -64,7 +64,8 @@ RSpec.describe Drasil::Client::Context do
 
         expect(config.base_url).to be_nil
         expect(config.headers).to eq({})
-        expect(config.include_root_in_json).to eq(false)
+        # nil means "not informed": resources keep their own setting
+        expect(config.include_root_in_json).to be_nil
         expect(config.page_query_name).to eq(:page)
         expect(config.per_page_query_name).to eq(:per_page)
         expect(config.ssl_options).to be_nil

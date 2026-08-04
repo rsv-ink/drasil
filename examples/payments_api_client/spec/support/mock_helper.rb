@@ -1,5 +1,5 @@
 module MockHelper
-  def mock_request(*args, base_url: Drasil::Config.base_url)
+  def mock_request(*args, base_url: PaymentsApiClient::BASE_URL)
     args[1] = "#{base_url}#{args[1]}"
 
     WebMock.stub_request(*args)

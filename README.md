@@ -118,6 +118,28 @@ client = Drasil::Client.new(
 )
 ```
 
+#### Formato do corpo das requisições
+
+Por padrão o corpo vai **sem root**, como em toda a linha v1.x:
+
+```ruby
+user.to_params  #=> { "name" => "João" }
+```
+
+Para APIs que esperam o recurso encapsulado, ative por cliente ou por classe:
+
+```ruby
+# por cliente (vale para todos os resources registrados nele)
+client = Drasil::Client.new(base_url: "https://api.example.com", include_root_in_json: true)
+
+# por classe (DSL do Spyke)
+class User < Drasil::Base
+  include_root_in_json true
+end
+
+user.to_params  #=> { "user" => { "name" => "João" } }
+```
+
 ### Múltiplos Clientes
 
 Execute múltiplos clientes de API simultaneamente:
@@ -298,7 +320,22 @@ client.register_resource(
 - Deve implementar o método `parse`
 - Deve retornar tupla `[data, metadata]`
 - Um parser pode ser reutilizado para múltiplas rotas
-- Use padrões de URL para combinar rotas (`/users/*` combina com `/users/123`)
+
+**Padrões de `parser_path`:**
+
+Os padrões são *globs* de caminho, não expressões regulares. O casamento roda contra o
+path da URL (host e query string são ignorados) e é ancorado em fronteira de segmento:
+
+| Padrão | Combina | Não combina |
+|---|---|---|
+| `/users/:id` | `/users/123`, `/v1/users/123` | `/users`, `/users_archive/1` |
+| `/users/*` | `/users`, `/users/123` | `/usersXYZ`, `/admin/users_backup` |
+| `/users/**` | `/users/1/posts/2` | `/users` |
+| `/users/` | qualquer caminho abaixo de `/users/` | — |
+
+O padrão mais específico ganha, independente da ordem de registro — mais segmentos
+primeiro, depois menos curingas. Um `/users/:id` genérico não engole mais um
+`/users/1/detail` registrado depois.
 
 ### Criação de Resources
 
@@ -310,8 +347,13 @@ class User < Drasil::Base
   attributes :id, :name, :email, :created_at, :updated_at
 
   # Definir associações
-  has_one :profile, "/users/:id/profile"
-  has_many :posts, "/users/:id/posts"
+  # Sem opções, o Spyke deriva "users/:user_id/profile" e "users/:user_id/posts"
+  has_one :profile
+  has_many :posts
+
+  # Para rotas fora da convenção, passe a URI como opção (nunca posicional)
+  # e use a foreign key do pai como placeholder:
+  #   has_many :posts, uri: "posts/for_user/:user_id"
 
   # Métodos de classe customizados
   def self.find_by_email(email)

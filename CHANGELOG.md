@@ -19,15 +19,19 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
 - ✅ Arquitetura thread-safe sem estado global compartilhado
 - ✅ `Drasil::Client::Context` unifica configuração, parsers e recursos em um só lugar
 - ✅ `Drasil::ConfigResolver` implementa fallback inteligente de configuração
-- ✅ CI/CD com GitHub Actions testando em Ruby 3.1, 3.2 e 3.3
-- ✅ 109 testes passando com cobertura completa
+- ✅ CI/CD com GitHub Actions testando em Ruby 3.2, 3.3 e 3.4
+- ✅ 189 testes passando, incluindo operações de escrita e formato do corpo das requisições
 - ✅ README completamente reescrito com guias e exemplos
 - ⚠️ `Drasil.configure` agora deprecated (mas ainda funciona)
 
 **Impacto de Breaking Changes:**
-- ✅ **ZERO** - Código v1.x continua funcionando com avisos de descontinuação
+- ✅ Código v1.x continua funcionando com avisos de descontinuação
+- ✅ Formato do corpo das requisições preservado (sem root por padrão, como na v1.x)
 - ✅ Migração gradual recomendada, mas não obrigatória
-- ✅ Retrocompatibilidade total mantida
+- ⚠️ **Única mudança de comportamento**: `parser_path` passou a casar caminhos com precisão
+  (`/users/*` não combina mais com `/usersXYZ` nem `/admin/users_backup`) e o parser mais
+  específico ganha independente da ordem de registro. Quem dependia do casamento frouxo
+  precisa revisar os padrões registrados.
 
 
 ### ✨ Adicionado
@@ -60,9 +64,9 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
 
 - **Suporte a Múltiplos Clientes** - Execute múltiplos clientes de API simultaneamente
   ```ruby
-  zoop = Drasil::Client.new(base_url: "https://api.zoop.com")
-  shopify = Drasil::Client.new(base_url: "https://mystore.myshopify.com")
-  stripe = Drasil::Client.new(base_url: "https://api.stripe.com")
+  payments = Drasil::Client.new(base_url: "https://api.payment-provider.com")
+  storefront = Drasil::Client.new(base_url: "https://api.store-platform.com")
+  crm = Drasil::Client.new(base_url: "https://api.crm-provider.com")
   ```
 
 - **Suporte a Múltiplas Versões** - Use diferentes versões da mesma API lado a lado
@@ -86,8 +90,10 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
   - Adicionado atributo de classe `drasil_client`
   - Método `connection` agora verifica primeiro a conexão específica do cliente
   - Métodos `page()` e `per_page()` usam configuração do cliente quando disponível
-  - Volta para configuração global para retrocompatibilidade
-  - `include_root_in_json` agora respeita a configuração do cliente
+  - Volta para configuração global e, por fim, para o default (`:page` / `:per_page`)
+  - `include_root_in_json` continua sendo o DSL do Spyke; a opção
+    `Drasil::Client.new(include_root_in_json:)` é aplicada aos resources registrados
+    no cliente, e o default segue sendo **sem root**, igual à v1.x
 
 - **`Drasil::JSONParser`** - Agora aceita injeção de cliente
   - Construtor modificado: `initialize(app, options = {})` onde `options[:client]` é o cliente opcional
@@ -127,7 +133,20 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
 - Corrigidos problemas de thread-safety causados pelo padrão singleton global
 - Corrigida poluição do registro de parsers entre testes
 - Corrigidos problemas de compartilhamento de conexão quando múltiplos clientes de API eram necessários
-- Resolvido `include_root_in_json` não sendo respeitado em alguns cenários
+- Operações de escrita (`create`, `save`, `update`, `to_params`) em resources registrados
+  via `register_resource` levantavam `ArgumentError: Class name cannot be blank`; a classe
+  escopada agora delega `model_name` à classe original
+- Corpo das requisições voltou ao formato da v1.x (sem root por padrão) — o refactor havia
+  reativado, sem aviso, o encapsulamento default do Spyke
+- `page()`/`per_page()` sem client e sem configuração global geravam `{ nil => n }`;
+  agora caem corretamente no default (`:page` / `:per_page`)
+- `parser_path` deixou de casar caminhos parecidos por acidente (`/users/*` não combina mais
+  com `/usersXYZ` nem `/admin/users_backup`) e a escolha do parser não depende mais da ordem
+  de registro
+- `Drasil.configure` sem `headers` levantava `NoMethodError`
+- `Drasil::Config.add_middleware` levantava `NoMethodError` em toda chamada (inicializava um Hash)
+- Corpo de resposta vazio (204) não levanta mais `MultiJson::ParseError`; JSON malformado agora
+  vira `Drasil::ParsingError`
 
 ### 🚀 Performance
 
@@ -139,7 +158,7 @@ Esta versão introduz uma **arquitetura baseada em cliente**, abandonando o padr
 ### 🚢 CI/CD
 
 - **GitHub Actions Workflow** (`.github/workflows/ci.yml`)
-  - Execução automática de testes em múltiplas versões do Ruby (3.1, 3.2, 3.3)
+  - Execução automática de testes em múltiplas versões do Ruby (3.2, 3.3, 3.4)
   - Validação de build em diferentes ambientes
   - Executado em pull requests e pushes para main
   - Garante qualidade do código antes de merge
@@ -291,8 +310,8 @@ Após migrar, você pode aproveitar novos recursos:
 
 ```ruby
 # Múltiplos clientes simultâneos
-zoop_client = Drasil::Client.new(base_url: "https://api.zoop.com")
-shopify_client = Drasil::Client.new(base_url: "https://mystore.myshopify.com")
+payments_client = Drasil::Client.new(base_url: "https://api.payment-provider.com")
+storefront_client = Drasil::Client.new(base_url: "https://api.store-platform.com")
 
 # Diferentes versões da mesma API
 api_v1 = Drasil::Client.new(base_url: "https://api.example.com/v1")

@@ -21,6 +21,14 @@ module Drasil
     # When set, this resource will use the client's connection and configuration
     class_attribute :drasil_client
 
+    # Request bodies are sent unwrapped by default, matching Drasil v1.x.
+    #
+    # Spyke defaults `include_root` to true; Drasil has always overridden it to
+    # keep payloads flat. Opt into root wrapping per class with the Spyke DSL
+    # (`include_root_in_json true`) or per client with
+    # `Drasil::Client.new(include_root_in_json: true)`.
+    include_root_in_json false
+
     class << self
       # Override connection to use client's connection if available
       #
@@ -31,13 +39,6 @@ module Drasil
         else
           super
         end
-      end
-
-      # Sets the connection for this resource
-      #
-      # @param conn [Faraday::Connection] The connection to use
-      def connection=(conn)
-        super
       end
 
       # Adds pagination to the query
@@ -78,46 +79,6 @@ module Drasil
         )
 
         where(Hash[per_page_query_name, number])
-      end
-
-      # Gets or sets the include_root_in_json setting with client-aware fallback
-      #
-      # When called with a value, sets the include_root_in_json setting.
-      # When called without a value, returns explicitly set value if available,
-      # otherwise falls back to client or global configuration.
-      #
-      # @param value [Boolean, nil] Optional value to set
-      # @return [Boolean] The include_root_in_json setting
-      #
-      # @example Setting value using DSL (preserves Spyke DSL compatibility)
-      #   class User < Drasil::Base
-      #     include_root_in_json true
-      #   end
-      #
-      # @example Setting value using assignment
-      #   class User < Drasil::Base
-      #     self.include_root_in_json = true
-      #   end
-      #
-      # @example Using client config (no explicit value set)
-      #   client = Drasil::Client.new(include_root_in_json: true)
-      #   client.register_resource(:users, User)
-      #   client.users.include_root_in_json #=> true (from client config)
-      def include_root_in_json(value = :not_provided)
-        # If a value is explicitly provided, set it (DSL-style usage)
-        if value != :not_provided
-          self.include_root_in_json = value
-          return value
-        end
-
-        # Check if explicitly set via setter (e.g., self.include_root_in_json = true)
-        # The setter is provided by Spyke's class_attribute and sets @include_root_in_json
-        if instance_variable_defined?(:@include_root_in_json) && !@include_root_in_json.nil?
-          return @include_root_in_json
-        end
-
-        # Fall back to client or global config
-        ConfigResolver.resolve(drasil_client, :include_root_in_json, default: false)
       end
     end
   end

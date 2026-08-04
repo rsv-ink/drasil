@@ -11,6 +11,13 @@ RSpec.configure do |config|
   config.include ClientHelper
   config.include StubHelper
 
+  # Drasil::Config is a global singleton and Drasil::Base holds process-wide
+  # state, so each example starts from a clean slate.
+  config.after do
+    Drasil::Config.reset!
+    Drasil::Base.include_root_in_json false
+  end
+
   config.expect_with :rspec do |expectations|
     expectations.include_chain_clauses_in_custom_matcher_descriptions = true
   end

@@ -16,14 +16,4 @@ module ClientHelper
       **options
     )
   end
-
-  # Cria múltiplos clients para testes de isolamento
-  def build_multiple_clients(count: 2)
-    Array.new(count) do |i|
-      build_test_client(
-        base_url: "https://api#{i + 1}.example.com",
-        headers: { "X-Client-ID" => (i + 1).to_s }
-      )
-    end
-  end
 end

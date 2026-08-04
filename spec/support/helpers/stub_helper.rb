@@ -34,20 +34,4 @@ module StubHelper
         headers: { 'Content-Type' => 'application/json' }
       )
   end
-
-  # Stub de múltiplos endpoints de uma API
-  def stub_api(base_url:, endpoints: {})
-    endpoints.each do |path, config|
-      method = config[:method] || :get
-      response = config[:response] || {}
-      status = config[:status] || 200
-
-      stub_request(method, "#{base_url}#{path}")
-        .to_return(
-          status: status,
-          body: response.to_json,
-          headers: { 'Content-Type' => 'application/json' }
-        )
-    end
-  end
 end

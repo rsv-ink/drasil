@@ -59,6 +59,9 @@ module Drasil
 
       raise Error.new('No parsers have been registered.') if Config.parsers.blank?
 
+      # Apply the global root wrapping preference to every resource
+      Drasil::Base.include_root_in_json(Config.include_root_in_json) unless Config.include_root_in_json.nil?
+
       connection_options = {
         url: Config.base_url
       }
@@ -66,7 +69,7 @@ module Drasil
       connection_options[:proxy] = Config.proxy_options if Config.proxy_options
 
       Spyke::Base.connection = Faraday.new(connection_options) do |conn|
-        conn.headers = Config.headers
+        conn.headers = Config.headers || {}
 
         conn.request   :multipart
         conn.request   :json

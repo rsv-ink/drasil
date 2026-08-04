@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require_relative "lib/zoop_api_client/version"
+require_relative "lib/payments_api_client/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "zoop_api_client"
-  spec.version = ZoopApiClient::VERSION
+  spec.name = "payments_api_client"
+  spec.version = PaymentsApiClient::VERSION
   spec.authors = ["Lucas Sousa", "João Alves"]
   spec.email = ["joao.alves@reserva.ink"]
 
-  spec.summary = "Zoop API Client"
+  spec.summary = "Payments API Client"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.

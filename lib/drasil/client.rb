@@ -69,6 +69,8 @@ module Drasil
       **options,
       &block
     )
+      raise ArgumentError, 'base_url cannot be blank' if base_url.blank?
+
       # Create instance context (must be created before connection)
       # Note: We pass self to context, but context is created before connection.
       # This is safe because context only stores the reference for later use.
@@ -107,12 +109,18 @@ module Drasil
     # @example
     #   client.sellers.find("123")
     #   client.buyers.where(status: "active")
+    #
+    # @raise [ArgumentError] if arguments are passed - a resource reader takes none
     def method_missing(method_name, *args, &block)
-      if @config.resource_registered?(method_name)
-        @config.get_resource(method_name)
-      else
-        super
+      return super unless @config.resource_registered?(method_name)
+
+      unless args.empty? && block.nil?
+        raise ArgumentError,
+              "##{method_name} is a resource reader and takes no arguments; " \
+              "did you mean #{method_name}.find(#{args.first.inspect})?"
       end
+
+      @config.get_resource(method_name)
     end
 
     # Checks if the client responds to a method

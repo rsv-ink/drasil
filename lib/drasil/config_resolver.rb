@@ -32,13 +32,19 @@ module Drasil
       #
       # @example Without client (global fallback)
       #   ConfigResolver.resolve(nil, :page_query_name, default: :page)
-      #   #=> :page (from Drasil::Config if defined, otherwise default)
+      #   #=> :page (from Drasil::Config when set, otherwise the default)
       def resolve(client, config_key, default:)
         # Priority 1: Client-specific configuration
-        return client.config.public_send(config_key) if client
+        if client
+          value = client.config.public_send(config_key)
+          return value unless value.nil?
+        end
 
         # Priority 2: Global configuration (deprecated)
-        return Config.public_send(config_key) if defined?(Config) && Config.respond_to?(config_key)
+        if Config.respond_to?(config_key)
+          value = Config.public_send(config_key)
+          return value unless value.nil?
+        end
 
         # Priority 3: Default value
         default

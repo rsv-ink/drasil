@@ -1,4 +1,4 @@
-require "zoop_api_client"
+require "payments_api_client"
 require "webmock/rspec"
 require "support/mock_helper"
 require "support/match_fixture"

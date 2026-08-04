@@ -1,4 +1,4 @@
-module ZoopApiClient
+module PaymentsApiClient
   module Parsers
     class DefaultParser < Drasil::Parser
       def parse
